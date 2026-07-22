@@ -785,6 +785,53 @@ details.spatial-python-fold summary {
               <label for="palette">Color palette</label>
               <select id="palette"></select>
             </div>
+            <div class="field">
+              <label for="viz-classification">Classification</label>
+              <select id="viz-classification" aria-label="Choropleth classification method">
+                <option value="quantile">Quantile (equal count)</option>
+                <option value="equal">Equal interval</option>
+                <option value="natural">Natural breaks (Jenks)</option>
+                <option value="stddev">Standard deviation</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="viz-classes">Classes</label>
+              <select id="viz-classes" aria-label="Number of choropleth classes">
+                <option value="5" selected>5</option>
+                <option value="7">7</option>
+                <option value="9">9</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="viz-boundary-color">County boundary color</label>
+              <select id="viz-boundary-color" aria-label="County boundary stroke color">
+                <option value="#334155" selected>Slate</option>
+                <option value="#0f172a">Navy</option>
+                <option value="#ffffff">White</option>
+                <option value="#94a3b8">Light gray</option>
+                <option value="#000000">Black</option>
+                <option value="custom">Custom…</option>
+              </select>
+              <input type="color" id="viz-boundary-color-custom" value="#334155" aria-label="Custom boundary color" style="margin-top:6px;width:100%;height:32px;padding:2px;display:none" />
+            </div>
+            <div class="field">
+              <label for="viz-boundary-type">County boundary type</label>
+              <select id="viz-boundary-type" aria-label="County boundary line style">
+                <option value="solid" selected>Solid</option>
+                <option value="dashed">Dashed</option>
+                <option value="dotted">Dotted</option>
+                <option value="none">None (fill only)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="viz-boundary-weight">County boundary weight</label>
+              <select id="viz-boundary-weight" aria-label="County boundary line weight">
+                <option value="0.25">Thin</option>
+                <option value="0.5" selected>Medium</option>
+                <option value="1">Thick</option>
+                <option value="1.5">Bold</option>
+              </select>
+            </div>
 
             <div id="sf-mount"></div>
             <div id="gc-mount"></div>
@@ -4665,8 +4712,73 @@ plt.show()`;
 
   document.getElementById('btn-viz-apply').addEventListener('click', () => applyViz());
   document.getElementById('viz-column')?.addEventListener('change', () => applyViz());
+  function refreshEdaVizMap() {
+    if (window.SqlWorkbench?.getLastRows()?.length) {
+      window.SqlWorkbench.refreshChoropleth?.();
+    }
+  }
+
+  function syncVizBoundaryColorCustom() {
+    const sel = document.getElementById('viz-boundary-color');
+    const custom = document.getElementById('viz-boundary-color-custom');
+    if (!sel || !custom) return;
+    const show = sel.value === 'custom';
+    custom.style.display = show ? 'block' : 'none';
+  }
+
+  function applyEdaVizMapStyle() {
+    syncVizBoundaryColorCustom();
+    const boundaryColorSel = document.getElementById('viz-boundary-color');
+    let boundaryColor = boundaryColorSel?.value || '#334155';
+    if (boundaryColor === 'custom') {
+      boundaryColor = document.getElementById('viz-boundary-color-custom')?.value || '#334155';
+    }
+    const style = {
+      classification: document.getElementById('viz-classification')?.value || 'quantile',
+      nClasses: Number(document.getElementById('viz-classes')?.value) || 5,
+      boundaryColor,
+      boundaryType: document.getElementById('viz-boundary-type')?.value || 'solid',
+      boundaryWeight: Number(document.getElementById('viz-boundary-weight')?.value) || 0.5,
+    };
+    localStorage.setItem('eda-viz-map-style', JSON.stringify(style));
+    refreshEdaVizMap();
+  }
+
+  function initEdaVizMapStyleControls() {
+    let saved = {};
+    try {
+      saved = JSON.parse(localStorage.getItem('eda-viz-map-style') || '{}');
+    } catch (_) { /* ignore */ }
+    const classSel = document.getElementById('viz-classification');
+    const classesSel = document.getElementById('viz-classes');
+    const colorSel = document.getElementById('viz-boundary-color');
+    const colorCustom = document.getElementById('viz-boundary-color-custom');
+    const typeSel = document.getElementById('viz-boundary-type');
+    const weightSel = document.getElementById('viz-boundary-weight');
+    if (classSel && saved.classification) classSel.value = saved.classification;
+    if (classesSel && saved.nClasses) classesSel.value = String(saved.nClasses);
+    if (typeSel && saved.boundaryType) typeSel.value = saved.boundaryType;
+    if (weightSel && saved.boundaryWeight != null) weightSel.value = String(saved.boundaryWeight);
+    if (colorSel && saved.boundaryColor) {
+      const preset = [...colorSel.options].some((o) => o.value === saved.boundaryColor);
+      if (preset) colorSel.value = saved.boundaryColor;
+      else {
+        colorSel.value = 'custom';
+        if (colorCustom) colorCustom.value = saved.boundaryColor;
+      }
+    }
+    syncVizBoundaryColorCustom();
+    [
+      'viz-classification', 'viz-classes', 'viz-boundary-color',
+      'viz-boundary-color-custom', 'viz-boundary-type', 'viz-boundary-weight',
+    ].forEach((id) => {
+      document.getElementById(id)?.addEventListener('change', applyEdaVizMapStyle);
+    });
+    colorSel?.addEventListener('change', syncVizBoundaryColorCustom);
+  }
+
   document.getElementById('palette')?.addEventListener('change', () => {
-    if (window.SqlWorkbench?.getLastRows()?.length) applyViz();
+    if (window.SqlWorkbench?.getLastRows()?.length) refreshEdaVizMap();
   });
   document.getElementById('btn-stats-desc').addEventListener('click', () => withStatsStatus(runDescriptives));
   document.getElementById('btn-stats-norm').addEventListener('click', () => withStatsStatus(runNormality));
@@ -4822,6 +4934,7 @@ plt.show()`;
 
   document.addEventListener('DOMContentLoaded', () => {
     applyVizPanelSize();
+    initEdaVizMapStyleControls();
     initSpatialMapStyleControls();
     const boot = async () => {
       if (!window.SqlWorkbench || !window.PLACES_DATA || !window.SVI_DATA) {

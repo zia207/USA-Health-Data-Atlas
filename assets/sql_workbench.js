@@ -1342,6 +1342,176 @@
     return colors[idx];
   }
 
+  function fmtBreak(v) {
+    if (!Number.isFinite(v)) return '—';
+    if (Math.abs(v) >= 1000) return v.toLocaleString(undefined, { maximumFractionDigits: 1 });
+    if (Math.abs(v) >= 10) return v.toFixed(1);
+    if (Math.abs(v) >= 1) return v.toFixed(2);
+    return v.toFixed(3);
+  }
+
+  function classificationLabel(method) {
+    const labels = {
+      quantile: 'Quantile',
+      equal: 'Equal interval',
+      natural: 'Natural breaks',
+      stddev: 'Std. deviation',
+    };
+    return labels[method] || method;
+  }
+
+  function getVizMapStyle() {
+    const classification = ($('viz-classification') && $('viz-classification').value) || 'quantile';
+    const nClasses = Number(($('viz-classes') && $('viz-classes').value) || 5);
+    let boundaryColor = ($('viz-boundary-color') && $('viz-boundary-color').value) || '#334155';
+    if (boundaryColor === 'custom') {
+      boundaryColor = ($('viz-boundary-color-custom') && $('viz-boundary-color-custom').value) || '#334155';
+    }
+    const boundaryType = ($('viz-boundary-type') && $('viz-boundary-type').value) || 'solid';
+    const boundaryWeight = Number(($('viz-boundary-weight') && $('viz-boundary-weight').value) || 0.5);
+    return { classification, nClasses, boundaryColor, boundaryType, boundaryWeight };
+  }
+
+  function boundaryStrokeStyle(style) {
+    if (!style || style.boundaryType === 'none') {
+      return { color: 'transparent', weight: 0, dashArray: null };
+    }
+    const dashArray = style.boundaryType === 'dashed' ? '8 4'
+      : style.boundaryType === 'dotted' ? '2 4'
+        : null;
+    return {
+      color: style.boundaryColor || '#334155',
+      weight: Number.isFinite(style.boundaryWeight) ? style.boundaryWeight : 0.5,
+      dashArray,
+    };
+  }
+
+  function resizePalette(base, n) {
+    const count = Math.max(3, Math.min(9, n || 5));
+    if (!base.length) return base;
+    if (base.length === count) return base.slice();
+    if (base.length > count) {
+      const out = [];
+      for (let i = 0; i < count; i++) {
+        const t = count === 1 ? 0 : i / (count - 1);
+        out.push(base[Math.min(base.length - 1, Math.round(t * (base.length - 1)))]);
+      }
+      return out;
+    }
+    return base.slice();
+  }
+
+  function quantileBreaks(sorted, k) {
+    if (!sorted.length) return [];
+    const breaks = [sorted[0]];
+    for (let i = 1; i < k; i++) {
+      const idx = Math.min(sorted.length - 1, Math.floor((i / k) * sorted.length));
+      breaks.push(sorted[idx]);
+    }
+    breaks.push(sorted[sorted.length - 1]);
+    return [...new Set(breaks)].sort((a, b) => a - b);
+  }
+
+  function equalBreaks(vmin, vmax, k) {
+    if (!Number.isFinite(vmin) || !Number.isFinite(vmax) || vmax <= vmin) return [vmin, vmax];
+    const step = (vmax - vmin) / k;
+    return Array.from({ length: k + 1 }, (_, i) => vmin + i * step);
+  }
+
+  function jenksBreaks(data, k) {
+    const sorted = data.filter(Number.isFinite).sort((a, b) => a - b);
+    const n = sorted.length;
+    if (n <= k) return [...new Set(sorted)];
+    const mat1 = Array.from({ length: n + 1 }, () => Array(k + 1).fill(0));
+    const mat2 = Array.from({ length: n + 1 }, () => Array(k + 1).fill(0));
+    for (let i = 1; i <= k; i++) {
+      mat1[1][i] = 1;
+      mat2[1][i] = 0;
+      for (let j = 2; j <= n; j++) mat2[j][i] = Infinity;
+    }
+    for (let l = 2; l <= n; l++) {
+      let s1 = 0; let s2 = 0; let w = 0;
+      for (let m = 1; m <= l; m++) {
+        const i3 = l - m + 1;
+        const val = sorted[i3 - 1];
+        s1 += val;
+        s2 += val * val;
+        w += 1;
+        const variance = s2 - (s1 * s1) / w;
+        const i4 = i3 - 1;
+        if (i4 !== 0) {
+          for (let j = 2; j <= k; j++) {
+            if (mat2[l][j] >= variance + mat2[i4][j - 1]) {
+              mat1[l][j] = i3;
+              mat2[l][j] = variance + mat2[i4][j - 1];
+            }
+          }
+        }
+      }
+      mat1[l][1] = 1;
+      mat2[l][1] = s2 - (s1 * s1) / w;
+    }
+    const breaks = [sorted[n - 1]];
+    let kclass = n;
+    for (let j = k; j >= 2; j--) {
+      const idx = mat1[kclass][j] - 2;
+      breaks.push(sorted[idx >= 0 ? idx : 0]);
+      kclass = mat1[kclass][j] - 1;
+    }
+    breaks.push(sorted[0]);
+    return [...new Set(breaks)].sort((a, b) => a - b);
+  }
+
+  function stddevBreaks(vals) {
+    const finite = vals.filter(Number.isFinite);
+    if (!finite.length) return [];
+    const mean = finite.reduce((s, v) => s + v, 0) / finite.length;
+    const std = Math.sqrt(finite.reduce((s, v) => s + (v - mean) ** 2, 0) / finite.length) || 1e-9;
+    const raw = [finite[0], mean - 2 * std, mean - std, mean, mean + std, mean + 2 * std, finite[finite.length - 1]];
+    return [...new Set(raw.filter(Number.isFinite))].sort((a, b) => a - b);
+  }
+
+  function computeBreaks(vals, method, nClasses, vmin, vmax) {
+    const finite = vals.filter(Number.isFinite);
+    if (!finite.length) return [0, 1];
+    const lo = vmin != null ? vmin : Math.min(...finite);
+    const hi = vmax != null ? vmax : Math.max(...finite);
+    const sorted = finite.slice().sort((a, b) => a - b);
+    const k = Math.max(3, Math.min(9, nClasses || 5));
+    if (method === 'equal') return equalBreaks(lo, hi, k);
+    if (method === 'natural') return jenksBreaks(sorted, k);
+    if (method === 'stddev') return stddevBreaks(sorted);
+    return quantileBreaks(sorted, k);
+  }
+
+  function classIndex(v, breaks) {
+    if (!Number.isFinite(v) || !breaks.length) return -1;
+    for (let i = breaks.length - 2; i >= 0; i--) {
+      if (v >= breaks[i]) return i;
+    }
+    return 0;
+  }
+
+  function colorFromBreaks(v, breaks, colors) {
+    const idx = classIndex(v, breaks);
+    if (idx < 0) return '#cbd5e1';
+    return colors[Math.min(colors.length - 1, idx)] || colors[colors.length - 1];
+  }
+
+  function buildChoroplethScale(vals, style) {
+    const vmin = Math.min(...vals);
+    const vmax = Math.max(...vals);
+    const colors = resizePalette(paletteColors(), style.nClasses);
+    const breaks = computeBreaks(vals, style.classification, style.nClasses, vmin, vmax);
+    return { vmin, vmax, colors, breaks };
+  }
+
+  function fillColorForValue(v, scale) {
+    if (!Number.isFinite(v)) return '#cbd5e1';
+    if (scale.breaks && scale.breaks.length > 1) return colorFromBreaks(v, scale.breaks, scale.colors);
+    return colorScale(scale.colors, scale.vmin, scale.vmax, v);
+  }
+
   function featureFips(feature) {
     let fid = feature.id;
     if (fid == null && feature.properties) {
@@ -1465,7 +1635,7 @@
     }
   }
 
-  function updateLegend(title, vmin, vmax, colors, subtitle) {
+  function updateLegend(title, vmin, vmax, colors, subtitle, breaks, methodLabel) {
     if (!map) return;
     if (legendCtrl) {
       map.removeControl(legendCtrl);
@@ -1473,13 +1643,28 @@
     }
     legendCtrl = L.control({ position: 'topright' });
     legendCtrl.onAdd = function () {
-      const div = L.DomUtil.create('div', 'map-legend');
+      const classified = breaks && breaks.length > 1;
+      const div = L.DomUtil.create('div', classified ? 'map-legend spatial-map-legend' : 'map-legend');
       const ramp = colors.map((c) => `<span style="background:${c}"></span>`).join('');
-      div.innerHTML =
-        `<strong>${title}</strong>` +
-        `<div class="legend-ramp">${ramp}</div>` +
-        `<div class="legend-labels"><span>${fmt(vmin)}</span><span>${fmt(vmax)}</span></div>` +
-        (subtitle ? `<div style="margin-top:6px;color:#5a6e78">${subtitle}</div>` : '');
+      let body = `<strong>${title}</strong>`;
+      if (methodLabel) body += `<div class="legend-sub">${methodLabel}</div>`;
+      body += `<div class="legend-ramp">${ramp}</div>`;
+      if (classified) {
+        body += `<div class="legend-labels"><span>${fmtBreak(breaks[0])}</span><span>${fmtBreak(breaks[breaks.length - 1])}</span></div>`;
+        if (breaks.length > 2) {
+          body += '<div class="legend-bins">';
+          body += breaks.slice(0, -1).map((lo, i) => {
+            const hi = breaks[i + 1];
+            const sw = colors[Math.min(colors.length - 1, i)];
+            return `<div class="legend-bin"><span class="sw" style="background:${sw}"></span><span>${fmtBreak(lo)} – ${fmtBreak(hi)}</span></div>`;
+          }).join('');
+          body += '</div>';
+        }
+      } else {
+        body += `<div class="legend-labels"><span>${fmt(vmin)}</span><span>${fmt(vmax)}</span></div>`;
+      }
+      if (subtitle) body += `<div style="margin-top:6px;color:#5a6e78">${subtitle}</div>`;
+      div.innerHTML = body;
       L.DomEvent.disableClickPropagation(div);
       return div;
     };
@@ -1516,7 +1701,8 @@
     const geo = global.COUNTY_GEO;
     if (!geo) return;
     ensureChoroplethOnMap();
-    const colors = paletteColors();
+    const vizStyle = getVizMapStyle();
+    const stroke = boundaryStrokeStyle(vizStyle);
     const byFips = {};
     rows.forEach((r) => {
       if (r.fips == null || r.val == null) return;
@@ -1526,15 +1712,16 @@
     });
     const vals = Object.values(byFips).map((r) => Number(r.val)).filter(Number.isFinite);
     if (!vals.length) return;
-    const vmin = Math.min(...vals);
-    const vmax = Math.max(...vals);
+    const scale = buildChoroplethScale(vals, vizStyle);
     const layer = L.geoJSON(geo, {
       filter(f) { return !!byFips[featureFips(f)]; },
       style(f) {
         const r = byFips[featureFips(f)];
         const v = Number(r.val);
         return {
-          color: '#334155', weight: 0.5, fillColor: colorScale(colors, vmin, vmax, v), fillOpacity: 0.82,
+          ...stroke,
+          fillColor: fillColorForValue(v, scale),
+          fillOpacity: 0.82,
         };
       },
       onEachFeature(f, lyr) {
@@ -1550,12 +1737,14 @@
     if (typeof layer.bringToFront === 'function') layer.bringToFront();
     updateLegend(
       'County values',
-      vmin,
-      vmax,
-      colors,
+      scale.vmin,
+      scale.vmax,
+      scale.colors,
       matched
         ? `${matched.toLocaleString()} counties on map`
-        : `${Object.keys(byFips).length.toLocaleString()} rows · 0 matched polygons (FIPS)`
+        : `${Object.keys(byFips).length.toLocaleString()} rows · 0 matched polygons (FIPS)`,
+      scale.breaks,
+      classificationLabel(vizStyle.classification)
     );
     if (matched) safeFitBounds(layer, { padding: [20, 20], maxZoom: 8 });
     else console.warn('County choropleth: no FIPS matches. Sample keys:', Object.keys(byFips).slice(0, 5));
@@ -1566,7 +1755,8 @@
     const geo = global.STATE_GEO;
     if (!geo) return;
     ensureChoroplethOnMap();
-    const colors = paletteColors();
+    const vizStyle = getVizMapStyle();
+    const stroke = boundaryStrokeStyle(vizStyle);
     const bySt = {};
     rows.forEach((r) => {
       const k = r.state_abbr || r.state;
@@ -1575,8 +1765,7 @@
     });
     const vals = Object.values(bySt).map((r) => Number(r.val)).filter(Number.isFinite);
     if (!vals.length) return;
-    const vmin = Math.min(...vals);
-    const vmax = Math.max(...vals);
+    const scale = buildChoroplethScale(vals, vizStyle);
     const layer = L.geoJSON(geo, {
       filter(f) {
         const ab = (f.properties && (f.properties.STUSPS || f.properties.postal_ABBR || f.properties.abbr)) || '';
@@ -1586,7 +1775,10 @@
         const ab = (f.properties && (f.properties.STUSPS || f.properties.postal_ABBR || f.properties.abbr)) || '';
         const r = bySt[String(ab).toUpperCase()];
         return {
-          color: '#1e293b', weight: 0.8, fillColor: colorScale(colors, vmin, vmax, Number(r.val)), fillOpacity: 0.75,
+          ...stroke,
+          weight: stroke.weight || 0.8,
+          fillColor: fillColorForValue(Number(r.val), scale),
+          fillOpacity: 0.75,
         };
       },
       onEachFeature(f, lyr) {
@@ -1599,7 +1791,15 @@
     choroplethGroup.clearLayers();
     choroplethGroup.addLayer(layer);
     choropleth = layer;
-    updateLegend('State values', vmin, vmax, colors, `${Object.keys(bySt).length} states`);
+    updateLegend(
+      'State values',
+      scale.vmin,
+      scale.vmax,
+      scale.colors,
+      `${Object.keys(bySt).length} states`,
+      scale.breaks,
+      classificationLabel(vizStyle.classification)
+    );
     safeFitBounds(layer, { padding: [16, 16] });
   }
 
@@ -2146,6 +2346,11 @@ LIMIT 40`,
     }
   }
 
+  function refreshChoropleth() {
+    if (!lastRows.length) return '';
+    return mapResults(lastRows);
+  }
+
   global.SqlWorkbench = {
     init,
     runSQL,
@@ -2155,6 +2360,7 @@ LIMIT 40`,
     getModelFrameRows,
     numericFrameColumns,
     visualizeFrameColumn,
+    refreshChoropleth,
     invalidateMap,
     listPipelineVariables,
     resolveCensusYear,
