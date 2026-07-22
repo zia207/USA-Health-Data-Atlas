@@ -253,7 +253,17 @@ tr:nth-child(even) td { background: #f7fafa; }
 .panel-title-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
 .panel-title-row h2 { margin: 0; }
 .split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.spatial-map-chart-split { grid-template-columns: 3fr 2fr; align-items: stretch; }
+.spatial-map-chart-split .spatial-map,
+.spatial-map-chart-split .stats-chart {
+  height: var(--viz-map-h);
+  min-height: var(--viz-map-h);
+  box-sizing: border-box;
+}
+.spatial-map-chart-split .stats-chart { display: flex; flex-direction: column; }
+.spatial-map-chart-split .stats-chart svg { flex: 1; width: 100%; height: auto; }
 @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+body.viz-stack-panels .spatial-map-chart-split { grid-template-columns: 1fr; }
 
 .pipeline-steps { list-style: none; display: grid; gap: 10px; margin: 0 0 14px; }
 .pipeline-steps li {
@@ -1249,7 +1259,7 @@ details.spatial-python-fold summary {
               <div class="kpi"><div class="num" id="sk-gw-bw">—</div><div class="lab">Bandwidth (km)</div></div>
               <div class="kpi"><div class="num" id="sk-gw-n">—</div><div class="lab">Counties</div></div>
             </div>
-            <div class="split">
+            <div class="split spatial-map-chart-split">
               <section class="panel"><h2 id="spatial-map-gw-title">Local map</h2><div id="spatial-map-gw" class="spatial-map"></div></section>
               <section class="panel"><h2 id="spatial-chart-gw-title">Chart</h2><div id="spatial-chart-gw" class="stats-chart"></div></section>
             </div>
@@ -4493,7 +4503,10 @@ plt.show()`;
   document.getElementById('spatial-gw-model')?.addEventListener('change', () => updateSpatialGwFields());
   document.getElementById('spatial-gw-mapvar')?.addEventListener('change', () => {
     const mapCol = document.getElementById('spatial-gw-mapvar').value;
-    if (lastGwResult && mapCol) window.SpatialStatistics.renderGwBetaMap(lastGwResult, mapCol);
+    if (lastGwResult && mapCol) {
+      window.SpatialStatistics.renderGwBetaMap(lastGwResult, mapCol);
+      setTimeout(() => window.SpatialStatistics?.invalidateMaps?.(), 160);
+    }
   });
   document.getElementById('btn-spatial-gw-refresh')?.addEventListener('click', () => refreshSpatialColumns());
   document.getElementById('btn-spatial-gw-python')?.addEventListener('click', () => {
@@ -4535,6 +4548,7 @@ plt.show()`;
       }
       document.getElementById('spatial-python-gw').textContent =
         pythonSpatialGW(modelType, yCol, y2Col, xCols);
+      setTimeout(() => window.SpatialStatistics?.invalidateMaps?.(), 160);
     });
   });
   document.getElementById('btn-spatial-bayes-python')?.addEventListener('click', () => {

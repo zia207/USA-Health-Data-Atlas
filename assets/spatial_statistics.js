@@ -677,10 +677,15 @@
       scrollWheelZoom: true,
       minZoom: 3,
       maxZoom: 10,
+      zoomControl: false,
     });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap',
     }).addTo(map);
+
+    if (global.attachMapZoomControl) {
+      attachMapZoomControl(map, { bounds: L.latLngBounds(USA_BOUNDS) });
+    }
 
     const layer = L.geoJSON(global.COUNTY_GEO, {
       style(f) {
@@ -744,7 +749,7 @@
 
   function drawMoranScatter(el, y, Wz, I, title) {
     if (!el) return;
-    const w = Math.max(420, el.clientWidth || 480);
+    const w = Math.max(320, el.clientWidth || 400);
     const h = Math.max(200, el.clientHeight || 260);
     const pad = 40;
     const xs = y; const ys = Wz;
@@ -783,9 +788,9 @@
 
   function drawBarChart(el, rows, title) {
     if (!el || !rows.length) return;
-    const w = Math.max(420, el.clientWidth || 480);
+    const w = Math.max(280, el.clientWidth || 360);
     const minH = Math.max(200, el.clientHeight || 220);
-    const h = Math.max(minH, 40 + rows.length * 28);
+    const h = minH;
     const padL = 120;
     const padR = 20;
     const padT = 24;
@@ -1009,7 +1014,9 @@
         diverging: true, title: `GWCORR · ${yCol} × ${y2Col}`, vmin: -1, vmax: 1,
       });
       const chartEl = document.getElementById('spatial-chart-gw');
-      if (chartEl) chartEl.innerHTML = '<p class="note" style="padding:12px;margin:0">Local Pearson r at each county (blue = negative, red = positive).</p>';
+      if (chartEl) {
+        chartEl.innerHTML = '<p class="note" style="padding:12px;margin:0;height:100%;display:flex;align-items:center;justify-content:center;text-align:center">Local Pearson r at each county (blue = negative, red = positive).</p>';
+      }
       const valid = res.localR.filter(Number.isFinite);
       return {
         summary: [
