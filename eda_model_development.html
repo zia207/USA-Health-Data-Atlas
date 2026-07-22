@@ -44,10 +44,11 @@
   --good: #2f7d4e; --warn: #b7431c; --focus: #0e4f8b;
   --viz-map-h: 400px;
   --viz-chart-h: 220px;
+  --spatial-table-h: 300px;
 }
-body[data-viz-size="compact"] { --viz-map-h: 300px; --viz-chart-h: 160px; }
-body[data-viz-size="large"] { --viz-map-h: 560px; --viz-chart-h: 340px; }
-body[data-viz-size="xlarge"] { --viz-map-h: 720px; --viz-chart-h: 480px; }
+body[data-viz-size="compact"] { --viz-map-h: 300px; --viz-chart-h: 160px; --spatial-table-h: 220px; }
+body[data-viz-size="large"] { --viz-map-h: 560px; --viz-chart-h: 340px; --spatial-table-h: 380px; }
+body[data-viz-size="xlarge"] { --viz-map-h: 720px; --viz-chart-h: 480px; --spatial-table-h: 460px; }
 body.viz-stack-panels .split { grid-template-columns: 1fr; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.5; }
@@ -369,6 +370,33 @@ details.spatial-math-fold .spatial-math-body li { margin-bottom: 4px; }
   background: #0b1f2a; color: #d7e8ea; padding: 12px; min-height: 140px; overflow: auto; margin: 0;
 }
 .spatial-map { height: var(--viz-map-h); min-height: var(--viz-map-h); width: 100%; background: #dfe7ea; border: 1px solid var(--hair); }
+.spatial-map-legend { max-width: 220px; }
+.spatial-map-legend .legend-sub { font-size: 11px; color: var(--steel); margin: 2px 0 6px; }
+.spatial-map-legend .legend-ramp { display: flex; height: 10px; border: 1px solid var(--hair); overflow: hidden; margin: 6px 0 4px; }
+.spatial-map-legend .legend-ramp span { flex: 1; }
+.spatial-map-legend .legend-labels { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--steel); }
+.spatial-map-legend .legend-bins { margin-top: 6px; max-height: 120px; overflow: auto; font-size: 10.5px; color: var(--ink); }
+.spatial-map-legend .legend-bin { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+.spatial-map-legend .legend-bin .sw { width: 14px; height: 10px; border: 1px solid var(--hair); flex-shrink: 0; }
+.spatial-viz-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  margin: 0 0 14px; padding: 12px 14px; background: #fff; border: 1px solid var(--hair);
+}
+.spatial-viz-bar label {
+  font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--steel); font-weight: 650; font-family: ui-monospace, Consolas, monospace;
+}
+.spatial-viz-bar select {
+  padding: 5px 8px; border: 1px solid var(--hair); background: #fff; font-size: 13px; min-width: 140px;
+}
+.spatial-viz-bar .spatial-viz-note { font-size: 12px; color: var(--steel); margin-left: auto; }
+.spatial-table-wrap {
+  overflow: auto; max-height: var(--spatial-table-h); border: 1px solid var(--hair);
+  font-size: 13px;
+}
+.spatial-table-wrap table { width: 100%; border-collapse: collapse; }
+.spatial-table-wrap th, .spatial-table-wrap td { padding: 7px 10px; border-bottom: 1px solid var(--hair); }
+.spatial-table-wrap th { background: var(--rail); color: #fff; position: sticky; top: 0; z-index: 1; }
 .viz-size-bar {
   max-width: 1400px; margin: 0 auto; padding: 0 16px 10px;
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;
@@ -433,7 +461,7 @@ details.spatial-python-fold summary {
     <button type="button" data-section="ml" aria-controls="section-ml">4. Machine Learning</button>
   </nav>
   <div class="viz-size-bar" role="toolbar" aria-label="Visualization size">
-    <label for="viz-panel-size">Map &amp; chart size</label>
+    <label for="viz-panel-size">Map, chart &amp; table size</label>
     <select id="viz-panel-size" aria-label="Map and chart panel size">
       <option value="compact">Compact</option>
       <option value="medium" selected>Medium</option>
@@ -876,6 +904,30 @@ details.spatial-python-fold summary {
           <li><strong>Spatial Cluster Detection</strong> — Find one statistically unusual blob of high (or low) risk.</li>
         </ul>
       </div>
+      <div class="spatial-viz-bar" role="toolbar" aria-label="Spatial map display settings">
+        <label for="spatial-map-classification">Classification</label>
+        <select id="spatial-map-classification" aria-label="Map classification method">
+          <option value="quantile">Quantile (equal count)</option>
+          <option value="equal">Equal interval</option>
+          <option value="natural">Natural breaks (Jenks)</option>
+          <option value="stddev">Standard deviation</option>
+        </select>
+        <label for="spatial-map-palette">Color scheme</label>
+        <select id="spatial-map-palette" aria-label="Map color palette"></select>
+        <label for="spatial-map-classes">Classes</label>
+        <select id="spatial-map-classes" aria-label="Number of map classes">
+          <option value="5" selected>5</option>
+          <option value="7">7</option>
+          <option value="9">9</option>
+        </select>
+        <label for="spatial-map-diverging">Diverging maps</label>
+        <select id="spatial-map-diverging" aria-label="Diverging color palette">
+          <option value="spectral">Blue → Red (spectral)</option>
+          <option value="ylorrd">Yellow → Red</option>
+          <option value="blues">Blues</option>
+        </select>
+        <span class="spatial-viz-note">Maps lock to CONUS extent · use toolbar above for map &amp; chart height</span>
+      </div>
       <div class="eda-subtabs spatial-subtabs" aria-label="Spatial analysis types">
         <button type="button" class="active" data-spatial="autocorr">Spatial Autocorrelation</button>
         <button type="button" data-spatial="bivar">Bivariate LISA</button>
@@ -948,7 +1000,7 @@ details.spatial-python-fold summary {
             <section class="panel"><h2>LISA cluster map</h2><div id="spatial-map-autocorr" class="spatial-map"></div></section>
             <section class="panel"><h2>Results</h2><pre id="spatial-output-autocorr">Global Moran's I, Moran scatterplot, and LISA cluster maps for county health outcomes.</pre></section>
             <section class="panel">
-              <div class="table-wrap"><table><thead id="spatial-thead-autocorr"></thead><tbody id="spatial-tbody-autocorr"><tr><td>Run analysis to see LISA summary.</td></tr></tbody></table></div>
+              <div class="table-wrap spatial-table-wrap"><table><thead id="spatial-thead-autocorr"></thead><tbody id="spatial-tbody-autocorr"><tr><td>Run analysis to see LISA summary.</td></tr></tbody></table></div>
             </section>
             <details class="spatial-python-fold"><summary>Python code (export to Jupyter)</summary><pre id="spatial-python-autocorr" class="spatial-python-block">Select an outcome and click Show Python.</pre></details>
           </main>
@@ -1026,7 +1078,7 @@ details.spatial-python-fold summary {
             <section class="panel"><h2>Bivariate LISA cluster map</h2><div id="spatial-map-bivar" class="spatial-map"></div></section>
             <section class="panel"><h2>Results</h2><pre id="spatial-output-bivar">Bivariate Local Moran's I cluster maps for cross-variable spatial association.</pre></section>
             <section class="panel">
-              <div class="table-wrap"><table><thead id="spatial-thead-bivar"></thead><tbody id="spatial-tbody-bivar"><tr><td>Run analysis to see bivariate LISA summary.</td></tr></tbody></table></div>
+              <div class="table-wrap spatial-table-wrap"><table><thead id="spatial-thead-bivar"></thead><tbody id="spatial-tbody-bivar"><tr><td>Run analysis to see bivariate LISA summary.</td></tr></tbody></table></div>
             </section>
             <details class="spatial-python-fold"><summary>Python code (export to Jupyter)</summary><pre id="spatial-python-bivar" class="spatial-python-block">Select X and Y variables and click Show Python.</pre></details>
           </main>
@@ -1093,10 +1145,10 @@ details.spatial-python-fold summary {
             </div>
             <section class="panel"><h2>Residual / local coefficient map</h2><div id="spatial-map-reg" class="spatial-map"></div></section>
             <section class="panel" id="spatial-reg-compare-panel" hidden><h2>Model comparison (AIC)</h2>
-              <div class="table-wrap"><table><thead id="spatial-thead-reg-compare"></thead><tbody id="spatial-tbody-reg-compare"><tr><td>Run compare mode to see AIC table.</td></tr></tbody></table></div>
+              <div class="table-wrap spatial-table-wrap"><table><thead id="spatial-thead-reg-compare"></thead><tbody id="spatial-tbody-reg-compare"><tr><td>Run compare mode to see AIC table.</td></tr></tbody></table></div>
             </section>
             <section class="panel" id="spatial-reg-coeff-panel" hidden><h2>SLX coefficients</h2>
-              <div class="table-wrap"><table><thead id="spatial-thead-reg-coeff"></thead><tbody id="spatial-tbody-reg-coeff"><tr><td>Run SLX or compare mode to see coefficients.</td></tr></tbody></table></div>
+              <div class="table-wrap spatial-table-wrap"><table><thead id="spatial-thead-reg-coeff"></thead><tbody id="spatial-tbody-reg-coeff"><tr><td>Run SLX or compare mode to see coefficients.</td></tr></tbody></table></div>
             </section>
             <section class="panel"><h2>Results</h2><pre id="spatial-output-reg">Diagnose residual spatial autocorrelation; fit SLX, spatial lag, or spatial error models.</pre></section>
             <details class="spatial-python-fold"><summary>Python code (export to Jupyter)</summary><pre id="spatial-python-reg" class="spatial-python-block">Select Y, predictors, and model type.</pre></details>
@@ -4233,6 +4285,7 @@ plt.show()`;
         el.style.color = 'var(--good)';
       }
       setTimeout(() => window.SpatialStatistics?.invalidateMaps?.(), 150);
+      applySpatialMapStyle();
       return res;
     } catch (e) {
       if (el) {
@@ -4728,11 +4781,48 @@ plt.show()`;
     }, 80);
   }
 
+  function applySpatialMapStyle() {
+    if (!window.SpatialStatistics) return;
+    const classification = document.getElementById('spatial-map-classification')?.value || 'quantile';
+    const palette = document.getElementById('spatial-map-palette')?.value || 'ylorrd';
+    const nClasses = Number(document.getElementById('spatial-map-classes')?.value) || 5;
+    const divergingPalette = document.getElementById('spatial-map-diverging')?.value || 'spectral';
+    const style = { classification, palette, nClasses, divergingPalette };
+    window.SpatialStatistics.setMapStyle(style);
+    localStorage.setItem('eda-spatial-map-style', JSON.stringify(style));
+    window.SpatialStatistics.refreshChoropleths?.();
+    applyVizPanelSize();
+  }
+
+  function initSpatialMapStyleControls() {
+    const palSel = document.getElementById('spatial-map-palette');
+    if (palSel && window.MapStyleControls) {
+      MapStyleControls.fillPaletteSelect(palSel, 'ylorrd');
+    }
+    let saved = {};
+    try {
+      saved = JSON.parse(localStorage.getItem('eda-spatial-map-style') || '{}');
+    } catch (_) { /* ignore */ }
+    const classSel = document.getElementById('spatial-map-classification');
+    const classesSel = document.getElementById('spatial-map-classes');
+    const divSel = document.getElementById('spatial-map-diverging');
+    if (classSel && saved.classification) classSel.value = saved.classification;
+    if (palSel && saved.palette) palSel.value = saved.palette;
+    if (classesSel && saved.nClasses) classesSel.value = String(saved.nClasses);
+    if (divSel && saved.divergingPalette) divSel.value = saved.divergingPalette;
+    ['spatial-map-classification', 'spatial-map-palette', 'spatial-map-classes', 'spatial-map-diverging']
+      .forEach((id) => {
+        document.getElementById(id)?.addEventListener('change', applySpatialMapStyle);
+      });
+    applySpatialMapStyle();
+  }
+
   document.getElementById('viz-panel-size')?.addEventListener('change', applyVizPanelSize);
   document.getElementById('viz-stack-panels')?.addEventListener('change', applyVizPanelSize);
 
   document.addEventListener('DOMContentLoaded', () => {
     applyVizPanelSize();
+    initSpatialMapStyleControls();
     const boot = async () => {
       if (!window.SqlWorkbench || !window.PLACES_DATA || !window.SVI_DATA) {
         setTimeout(boot, 50);

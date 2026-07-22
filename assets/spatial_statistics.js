@@ -4,9 +4,12 @@
  */
 (function (global) {
   const USA_BOUNDS = [[24.5, -125], [49.5, -66.5]];
+  const USA_FIT_OPTS = { padding: [14, 14], maxZoom: 5, animate: false };
   const CLUSTER_COLORS = { HH: '#D65F5F', LL: '#4878CF', HL: '#F4A582', LH: '#92C5DE', NS: '#d0d8dc' };
   const BV_CLUSTER_COLORS = { HH: '#d73027', LL: '#4575b4', HL: '#fdae61', LH: '#abd9e9', NS: '#ffffbf' };
   const maps = {};
+  const legendControls = {};
+  const lastChoropleths = new Map();
 
   function haversineKm(lat1, lon1, lat2, lon2) {
     const R = 6371;
@@ -407,10 +410,159 @@
     return out;
   }
 
+  let mapStyle = {
+    classification: 'quantile',
+    palette: 'ylorrd',
+    divergingPalette: 'spectral',
+    nClasses: 5,
+  };
+
+  function getMapStyle() {
+    return { ...mapStyle };
+  }
+
+  function setMapStyle(partial) {
+    if (!partial || typeof partial !== 'object') return getMapStyle();
+    Object.assign(mapStyle, partial);
+    return getMapStyle();
+  }
+
+  function fmtBreak(v) {
+    if (!Number.isFinite(v)) return '—';
+    if (Math.abs(v) >= 1000) return v.toLocaleString(undefined, { maximumFractionDigits: 1 });
+    if (Math.abs(v) >= 10) return v.toFixed(1);
+    if (Math.abs(v) >= 1) return v.toFixed(2);
+    return v.toFixed(3);
+  }
+
   function palette(id) {
     const colors = (global.MapStyleControls && global.MapStyleControls.getColors(id))
       || ['#ffffb2', '#fecc5c', '#fd8d3c', '#f03b20', '#bd0026'];
     return colors;
+  }
+
+  function paletteForOpts(opts) {
+    if (opts.categorical) return null;
+    const id = opts.diverging
+      ? (opts.palette || mapStyle.divergingPalette || 'spectral')
+      : (opts.palette || mapStyle.palette || 'ylorrd');
+    const base = palette(id);
+    const n = Math.max(3, Math.min(9, opts.nClasses || mapStyle.nClasses || 5));
+    if (base.length === n) return base;
+    if (base.length > n) {
+      const out = [];
+      for (let i = 0; i < n; i++) {
+        const t = n === 1 ? 0 : i / (n - 1);
+        out.push(base[Math.min(base.length - 1, Math.round(t * (base.length - 1)))]);
+      }
+      return out;
+    }
+    return base;
+  }
+
+  function quantileBreaks(sorted, k) {
+    if (!sorted.length) return [];
+    const breaks = [sorted[0]];
+    for (let i = 1; i < k; i++) {
+      const idx = Math.min(sorted.length - 1, Math.floor((i / k) * sorted.length));
+      breaks.push(sorted[idx]);
+    }
+    breaks.push(sorted[sorted.length - 1]);
+    return [...new Set(breaks)].sort((a, b) => a - b);
+  }
+
+  function equalBreaks(vmin, vmax, k) {
+    if (!Number.isFinite(vmin) || !Number.isFinite(vmax) || vmax <= vmin) return [vmin, vmax];
+    const step = (vmax - vmin) / k;
+    return Array.from({ length: k + 1 }, (_, i) => vmin + i * step);
+  }
+
+  function jenksBreaks(data, k) {
+    const sorted = data.filter(Number.isFinite).sort((a, b) => a - b);
+    const n = sorted.length;
+    if (n <= k) return [...new Set(sorted)];
+    const mat1 = Array.from({ length: n + 1 }, () => Array(k + 1).fill(0));
+    const mat2 = Array.from({ length: n + 1 }, () => Array(k + 1).fill(0));
+    for (let i = 1; i <= k; i++) {
+      mat1[1][i] = 1;
+      mat2[1][i] = 0;
+      for (let j = 2; j <= n; j++) mat2[j][i] = Infinity;
+    }
+    for (let l = 2; l <= n; l++) {
+      let s1 = 0; let s2 = 0; let w = 0;
+      for (let m = 1; m <= l; m++) {
+        const i3 = l - m + 1;
+        const val = sorted[i3 - 1];
+        s1 += val;
+        s2 += val * val;
+        w += 1;
+        const variance = s2 - (s1 * s1) / w;
+        const i4 = i3 - 1;
+        if (i4 !== 0) {
+          for (let j = 2; j <= k; j++) {
+            if (mat2[l][j] >= variance + mat2[i4][j - 1]) {
+              mat1[l][j] = i3;
+              mat2[l][j] = variance + mat2[i4][j - 1];
+            }
+          }
+        }
+      }
+      mat1[l][1] = 1;
+      mat2[l][1] = s2 - (s1 * s1) / w;
+    }
+    const breaks = [sorted[n - 1]];
+    let kclass = n;
+    for (let j = k; j >= 2; j--) {
+      const idx = mat1[kclass][j] - 2;
+      breaks.push(sorted[idx >= 0 ? idx : 0]);
+      kclass = mat1[kclass][j] - 1;
+    }
+    breaks.push(sorted[0]);
+    return [...new Set(breaks)].sort((a, b) => a - b);
+  }
+
+  function stddevBreaks(vals) {
+    const finite = vals.filter(Number.isFinite);
+    if (!finite.length) return [];
+    const mean = finite.reduce((s, v) => s + v, 0) / finite.length;
+    const std = Math.sqrt(finite.reduce((s, v) => s + (v - mean) ** 2, 0) / finite.length) || 1e-9;
+    const raw = [finite[0], mean - 2 * std, mean - std, mean, mean + std, mean + 2 * std, finite[finite.length - 1]];
+    return [...new Set(raw.filter(Number.isFinite))].sort((a, b) => a - b);
+  }
+
+  function computeBreaks(vals, method, nClasses, vmin, vmax, diverging) {
+    const finite = vals.filter(Number.isFinite);
+    if (!finite.length) return [0, 1];
+    const lo = vmin != null ? vmin : Math.min(...finite);
+    const hi = vmax != null ? vmax : Math.max(...finite);
+    const sorted = finite.slice().sort((a, b) => a - b);
+    const k = Math.max(3, Math.min(9, nClasses || 5));
+    if (diverging && vmin != null && vmax != null && vmin < 0 && vmax > 0) {
+      const neg = sorted.filter((v) => v <= 0);
+      const pos = sorted.filter((v) => v >= 0);
+      const half = Math.max(2, Math.floor(k / 2));
+      const left = neg.length ? quantileBreaks(neg, half) : [vmin, 0];
+      const right = pos.length ? quantileBreaks(pos, half) : [0, vmax];
+      return [...new Set([...left, ...right])].sort((a, b) => a - b);
+    }
+    if (method === 'equal') return equalBreaks(lo, hi, k);
+    if (method === 'natural') return jenksBreaks(sorted, k);
+    if (method === 'stddev') return stddevBreaks(sorted);
+    return quantileBreaks(sorted, k);
+  }
+
+  function classIndex(v, breaks) {
+    if (!Number.isFinite(v) || !breaks.length) return -1;
+    for (let i = breaks.length - 2; i >= 0; i--) {
+      if (v >= breaks[i]) return i;
+    }
+    return 0;
+  }
+
+  function colorFromBreaks(v, breaks, colors) {
+    const idx = classIndex(v, breaks);
+    if (idx < 0) return '#cbd5e1';
+    return colors[Math.min(colors.length - 1, idx)] || colors[colors.length - 1];
   }
 
   function colorScale(vmin, vmax, v, colors) {
@@ -421,10 +573,21 @@
   }
 
   function destroyMap(id) {
+    if (legendControls[id]) {
+      try { legendControls[id].remove(); } catch (_) { /* ignore */ }
+      delete legendControls[id];
+    }
     if (maps[id]) {
       maps[id].remove();
       delete maps[id];
     }
+  }
+
+  function fitConus(map) {
+    if (!map) return;
+    try {
+      map.fitBounds(USA_BOUNDS, USA_FIT_OPTS);
+    } catch (_) { /* ignore */ }
   }
 
   function divergingColor(t) {
@@ -437,26 +600,99 @@
     return `rgb(${Math.round(247 - 8 * u)},${Math.round(175 - 118 * u)},${Math.round(195 - 162 * u)})`;
   }
 
+  function mergeRenderOpts(opts) {
+    const o = { ...(opts || {}) };
+    if (!o.categorical) {
+      o.classification = o.classification || mapStyle.classification || 'quantile';
+      o.nClasses = o.nClasses || mapStyle.nClasses || 5;
+      if (!o.palette) {
+        o.palette = o.diverging
+          ? (mapStyle.divergingPalette || 'spectral')
+          : (mapStyle.palette || 'ylorrd');
+      }
+    }
+    return o;
+  }
+
+  function attachClassificationLegend(map, containerId, title, breaks, colors, subtitle) {
+    if (legendControls[containerId]) {
+      try { legendControls[containerId].remove(); } catch (_) { /* ignore */ }
+    }
+    const ctrl = L.control({ position: 'bottomright' });
+    ctrl.onAdd = function () {
+      const div = L.DomUtil.create('div', 'map-legend spatial-map-legend');
+      const ramp = colors.map((c) => `<span style="background:${c}"></span>`).join('');
+      const labels = breaks.length > 1
+        ? `<div class="legend-labels"><span>${fmtBreak(breaks[0])}</span><span>${fmtBreak(breaks[breaks.length - 1])}</span></div>`
+        : '';
+      const bins = breaks.length > 2
+        ? breaks.slice(0, -1).map((lo, i) => {
+          const hi = breaks[i + 1];
+          const sw = colors[Math.min(colors.length - 1, i)];
+          return `<div class="legend-bin"><span class="sw" style="background:${sw}"></span><span>${fmtBreak(lo)} – ${fmtBreak(hi)}</span></div>`;
+        }).join('')
+        : '';
+      div.innerHTML = `<strong>${title || 'Map'}</strong>`
+        + (subtitle ? `<div class="legend-sub">${subtitle}</div>` : '')
+        + `<div class="legend-ramp">${ramp}</div>${labels}`
+        + (bins ? `<div class="legend-bins">${bins}</div>` : '');
+      L.DomEvent.disableClickPropagation(div);
+      return div;
+    };
+    ctrl.addTo(map);
+    legendControls[containerId] = ctrl;
+  }
+
   function renderChoropleth(containerId, fipsToVal, opts) {
     const el = document.getElementById(containerId);
-    if (!el || !global.COUNTY_GEO || !global.L) return;
+    if (!el || !global.COUNTY_GEO || !global.L) return null;
+    const refreshOnly = !!(opts && opts._refreshOnly);
+    const merged = mergeRenderOpts(opts || {});
+    if (!refreshOnly) {
+      const store = { ...merged };
+      delete store._refreshOnly;
+      lastChoropleths.set(containerId, {
+        fipsToVal: { ...fipsToVal },
+        opts: store,
+        title: store.title || '',
+      });
+    }
+
     destroyMap(containerId);
-    const colors = palette(opts.palette || 'ylorrd');
     const vals = Object.values(fipsToVal).filter(Number.isFinite);
-    const vmin = opts.vmin != null ? opts.vmin : Math.min(...vals);
-    const vmax = opts.vmax != null ? opts.vmax : Math.max(...vals);
-    const diverging = opts.palette === 'RdBu' || (vmin < 0 && vmax > 0);
-    const map = L.map(containerId, { scrollWheelZoom: true }).fitBounds(USA_BOUNDS);
+    if (!vals.length && !merged.categorical) return null;
+
+    const colors = paletteForOpts(merged);
+    const vmin = merged.vmin != null ? merged.vmin : Math.min(...vals);
+    const vmax = merged.vmax != null ? merged.vmax : Math.max(...vals);
+    const diverging = !!merged.diverging
+      || merged.palette === 'RdBu'
+      || merged.palette === 'spectral'
+      || (vmin < 0 && vmax > 0 && !merged.categorical);
+    const breaks = merged.categorical
+      ? null
+      : computeBreaks(vals, merged.classification, merged.nClasses, vmin, vmax, diverging);
+
+    const map = L.map(containerId, {
+      scrollWheelZoom: true,
+      minZoom: 3,
+      maxZoom: 10,
+    });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap',
     }).addTo(map);
+
     const layer = L.geoJSON(global.COUNTY_GEO, {
       style(f) {
         const fips = fipsFromFeature(f);
         const v = fipsToVal[fips];
-        let fill;
-        if (opts.categorical) {
-          fill = opts.categorical[v] || '#e0e0e0';
+        let fill = '#e8eef1';
+        if (merged.categorical) {
+          fill = merged.categorical[v] || '#e0e0e0';
+        } else if (!Number.isFinite(v)) {
+          fill = '#e8eef1';
+        } else if (breaks && breaks.length > 1) {
+          fill = colorFromBreaks(v, breaks, colors);
         } else if (diverging) {
           const mid = (vmin + vmax) / 2;
           const span = Math.max(vmax - mid, mid - vmin, 1e-9);
@@ -464,12 +700,46 @@
         } else {
           fill = colorScale(vmin, vmax, v, colors);
         }
-        return { fillColor: fill, weight: 0.3, color: '#fff', fillOpacity: 0.85 };
+        return { fillColor: fill, weight: 0.25, color: '#fff', fillOpacity: 0.88 };
+      },
+      onEachFeature(f, lyr) {
+        const fips = fipsFromFeature(f);
+        const v = fipsToVal[fips];
+        if (Number.isFinite(v)) {
+          lyr.bindTooltip(`FIPS ${fips}<br>${merged.title || 'Value'}: <b>${fmtBreak(v)}</b>`, { sticky: true });
+        }
       },
     }).addTo(map);
+
     maps[containerId] = map;
-    setTimeout(() => map.invalidateSize(), 120);
-    return { map, layer, vmin, vmax };
+    fitConus(map);
+    if (!merged.categorical && colors && breaks) {
+      const classLabel = {
+        quantile: 'Quantile',
+        equal: 'Equal interval',
+        natural: 'Natural breaks',
+        stddev: 'Std dev',
+      }[merged.classification] || merged.classification;
+      attachClassificationLegend(
+        map,
+        containerId,
+        merged.title || 'Spatial map',
+        breaks,
+        colors,
+        `${classLabel} · CONUS extent`
+      );
+    }
+    setTimeout(() => {
+      map.invalidateSize();
+      fitConus(map);
+    }, 140);
+    return { map, layer, vmin, vmax, breaks, colors };
+  }
+
+  function refreshChoropleths() {
+    lastChoropleths.forEach((entry, id) => {
+      renderChoropleth(id, entry.fipsToVal, { ...entry.opts, _refreshOnly: true });
+    });
   }
 
   function drawMoranScatter(el, y, Wz, I, title) {
@@ -735,7 +1005,9 @@
       const res = gwCorr(y1, y2, dists, bandwidthKm || null);
       const fipsMap = {};
       data.forEach((d, i) => { fipsMap[d.fips] = res.localR[i]; });
-      renderChoropleth('spatial-map-gw', fipsMap, { palette: 'RdBu', vmin: -1, vmax: 1 });
+      renderChoropleth('spatial-map-gw', fipsMap, {
+        diverging: true, title: `GWCORR · ${yCol} × ${y2Col}`, vmin: -1, vmax: 1,
+      });
       const chartEl = document.getElementById('spatial-chart-gw');
       if (chartEl) chartEl.innerHTML = '<p class="note" style="padding:12px;margin:0">Local Pearson r at each county (blue = negative, red = positive).</p>';
       const valid = res.localR.filter(Number.isFinite);
@@ -760,7 +1032,7 @@
       const colIdx = xCols.indexOf(mapCol) + 1;
       const fipsMap = {};
       data.forEach((d, i) => { fipsMap[d.fips] = res.betas[i][colIdx]; });
-      renderChoropleth('spatial-map-gw', fipsMap, { palette: 'RdBu' });
+      renderChoropleth('spatial-map-gw', fipsMap, { diverging: true, title: `GW-OLS β · ${mapCol}` });
       drawMoranScatter(
         document.getElementById('spatial-chart-gw'),
         data.map((d) => d.y),
@@ -786,7 +1058,7 @@
     const j = xCols.indexOf(mapCol);
     const fipsMap = {};
     data.forEach((d, i) => { fipsMap[d.fips] = res.localImp[i][j]; });
-    renderChoropleth('spatial-map-gw', fipsMap, { palette: 'YlOrRd' });
+    renderChoropleth('spatial-map-gw', fipsMap, { title: `GW-RF importance · ${mapCol}` });
     drawBarChart(
       document.getElementById('spatial-chart-gw'),
       res.globalImp,
@@ -815,12 +1087,12 @@
       const colIdx = xCols.indexOf(mapCol) + 1;
       const fipsMap = {};
       data.forEach((d, i) => { fipsMap[d.fips] = res.betas[i][colIdx]; });
-      renderChoropleth('spatial-map-gw', fipsMap, { palette: 'RdBu' });
+      renderChoropleth('spatial-map-gw', fipsMap, { diverging: true, title: `GW-OLS β · ${mapCol}` });
     } else if (gwResult.type === 'gwrf') {
       const j = xCols.indexOf(mapCol);
       const fipsMap = {};
       data.forEach((d, i) => { fipsMap[d.fips] = res.localImp[i][j]; });
-      renderChoropleth('spatial-map-gw', fipsMap, { palette: 'YlOrRd' });
+      renderChoropleth('spatial-map-gw', fipsMap, { title: `GW-RF importance · ${mapCol}` });
     }
   }
 
@@ -841,7 +1113,7 @@
     const localRes = localMoransBV(x, y, W, Math.min(perm, 199));
     const fipsCluster = {};
     data.forEach((d, i) => { fipsCluster[d.fips] = localRes.cluster[i]; });
-    renderChoropleth('spatial-map-bivar', fipsCluster, { categorical: BV_CLUSTER_COLORS });
+    renderChoropleth('spatial-map-bivar', fipsCluster, { categorical: BV_CLUSTER_COLORS, title: 'Bivariate LISA clusters' });
     const meanI = localRes.Ilocal.reduce((s, v) => s + v, 0) / localRes.Ilocal.length;
     drawMoranScatter(
       document.getElementById('spatial-chart-bivar-moran'),
@@ -880,7 +1152,7 @@
     data.forEach((d, i) => { fipsCluster[d.fips] = localRes.cluster[i]; });
     const fipsLisa = {};
     data.forEach((d, i) => { fipsLisa[d.fips] = localRes.Ilocal[i]; });
-    renderChoropleth('spatial-map-autocorr', fipsCluster, { categorical: CLUSTER_COLORS });
+    renderChoropleth('spatial-map-autocorr', fipsCluster, { categorical: CLUSTER_COLORS, title: 'LISA clusters' });
     drawMoranScatter(
       document.getElementById('spatial-chart-autocorr-moran'),
       globalRes.z,
@@ -963,7 +1235,7 @@
       activeLabel = slx.aic < ols.aic ? 'SLX' : 'OLS';
     } else {
       data.forEach((d, i) => { mapVals[d.fips] = active.resid[i]; });
-      renderChoropleth('spatial-map-reg', mapVals, { palette: 'RdBu' });
+      renderChoropleth('spatial-map-reg', mapVals, { diverging: true, title: 'Regression residuals' });
       drawMoranScatter(
         document.getElementById('spatial-chart-reg-scatter'),
         y,
@@ -1023,8 +1295,8 @@
       fipsRaw[d.fips] = smr[i];
       fipsSmooth[d.fips] = smoothed[i];
     });
-    renderChoropleth('spatial-map-bayes-raw', fipsRaw, { palette: 'RdBu' });
-    renderChoropleth('spatial-map-bayes-smooth', fipsSmooth, { palette: 'RdBu' });
+    renderChoropleth('spatial-map-bayes-raw', fipsRaw, { diverging: true, title: 'Raw SMR' });
+    renderChoropleth('spatial-map-bayes-smooth', fipsSmooth, { diverging: true, title: 'Smoothed rate' });
     drawHist(document.getElementById('spatial-chart-bayes-shrink'), eb.shrink, 'Shrinkage factor');
     return {
       summary: [
@@ -1062,8 +1334,9 @@
     });
     renderChoropleth('spatial-map-cluster-scan', fipsScan, {
       categorical: { 0: '#e0e0e0', 1: '#D65F5F' },
+      title: 'Scan statistic cluster',
     });
-    renderChoropleth('spatial-map-cluster-lisa', fipsLisa, { categorical: CLUSTER_COLORS });
+    renderChoropleth('spatial-map-cluster-lisa', fipsLisa, { categorical: CLUSTER_COLORS, title: 'LISA High-High' });
     const nLISA = lisa.cluster.filter((c) => c === 'HH').length;
     return {
       summary: [
@@ -1080,7 +1353,10 @@
 
   function invalidateMaps() {
     Object.values(maps).forEach((m) => {
-      try { m.invalidateSize(); } catch (_) { /* ignore */ }
+      try {
+        m.invalidateSize();
+        fitConus(m);
+      } catch (_) { /* ignore */ }
     });
   }
 
@@ -1093,6 +1369,9 @@
     runBayes,
     runCluster,
     renderChoropleth,
+    refreshChoropleths,
+    getMapStyle,
+    setMapStyle,
     invalidateMaps,
     destroyMap,
   };
