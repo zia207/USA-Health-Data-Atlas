@@ -76,6 +76,24 @@ INDICATORS = [
     ("POV150", "Poverty", "Non-Medical Factors", "acs"),
 ]
 
+# Area fractions of legacy CT counties (090xx) within each planning region (091xx).
+# Derived from Census 2020 vs 2024 county-equivalent boundaries.
+CT_LEGACY_TO_PLANNING = {
+    "09110": {"09003": 0.877587, "09005": 1e-05, "09007": 1.4e-05, "09009": 2.9e-05,
+              "09011": 1.2e-05, "09013": 0.928427, "09015": 4e-05},
+    "09120": {"09001": 0.222283},
+    "09130": {"09003": 9e-06, "09007": 0.999947, "09009": 2e-05, "09011": 0.085436},
+    "09140": {"09001": 0.04884, "09003": 0.035737, "09005": 0.127404, "09009": 0.391052},
+    "09150": {"09011": 0.056857, "09013": 0.071535, "09015": 0.946936},
+    "09160": {"09003": 0.086668, "09005": 0.786738},
+    "09170": {"09001": 0.0, "09007": 2.2e-05, "09009": 0.608891},
+    "09180": {"09007": 1.7e-05, "09011": 0.857694, "09013": 3.8e-05, "09015": 0.053024},
+    "09190": {"09001": 0.728876, "09005": 0.085848, "09009": 7e-06},
+}
+CT_LEGACY_FIPS = frozenset(
+    fips for parts in CT_LEGACY_TO_PLANNING.values() for fips in parts
+)
+
 
 def fetch_all(layer_url: str, fields: list[str]) -> list[dict]:
     out: list[dict] = []
@@ -112,6 +130,41 @@ def state_agg(pairs: list[tuple[float, float | None]]) -> float | None:
         return round(num / den, 3) if den else None
     vals = [v for v, _ in pairs]
     return round(sum(vals) / len(vals), 3) if vals else None
+
+
+def ct_planning_pop(pr_fips: str, acs_by: dict) -> float | None:
+    fracs = CT_LEGACY_TO_PLANNING.get(pr_fips, {})
+    total = 0.0
+    for co_fips, frac in fracs.items():
+        row = acs_by.get(co_fips, {})
+        try:
+            pop = float(row.get("TotalPopulation") or 0)
+        except Exception:
+            pop = 0.0
+        total += pop * frac
+    return total if total > 0 else None
+
+
+def ct_acs_values(pr_fips: str, acs_codes: list[str], acs_by: dict) -> dict[str, float | None]:
+    fracs = CT_LEGACY_TO_PLANNING.get(pr_fips, {})
+    out: dict[str, float | None] = {}
+    for code in acs_codes:
+        num = 0.0
+        den = 0.0
+        for co_fips, frac in fracs.items():
+            row = acs_by.get(co_fips, {})
+            try:
+                v = float(row.get(code))
+                pop = float(row.get("TotalPopulation") or 0)
+            except Exception:
+                continue
+            if pop <= 0:
+                continue
+            w = pop * frac
+            num += v * w
+            den += w
+        out[code] = round(num / den, 3) if den else None
+    return out
 
 
 def main() -> None:
@@ -155,12 +208,18 @@ def main() -> None:
             continue
         st = r.get("StateAbbr") or ""
         name = r.get("CountyFullName") or r.get("CountyName") or fips
+        is_ct_planning = st == "CT" and fips in CT_LEGACY_TO_PLANNING
         a = acs_by.get(fips, {})
-        pop = a.get("TotalPopulation")
-        try:
-            pop = float(pop) if pop is not None else None
-        except Exception:
-            pop = None
+        if is_ct_planning:
+            pop = ct_planning_pop(fips, acs_by)
+            ct_acs = ct_acs_values(fips, acs_codes, acs_by)
+        else:
+            pop = a.get("TotalPopulation")
+            try:
+                pop = float(pop) if pop is not None else None
+            except Exception:
+                pop = None
+            ct_acs = None
         vals = [None] * len(codes)
         for code in places_codes:
             v = r.get(f"{code}_CrudePrev")
@@ -173,7 +232,10 @@ def main() -> None:
             vals[code_index[code]] = round(v, 3)
             state_buckets.setdefault(st, {}).setdefault(code, []).append((v, pop))
         for code in acs_codes:
-            v = a.get(code)
+            if ct_acs is not None:
+                v = ct_acs.get(code)
+            else:
+                v = a.get(code)
             try:
                 v = float(v) if v is not None else None
             except Exception:
@@ -199,8 +261,9 @@ def main() -> None:
             "places_url": "https://www.cdc.gov/places",
             "data_note": (
                 "County crude prevalence (%) from CDC PLACES; Non-Medical Factors from ACS "
-                "SDOH layers used by the Experience. State values are population-weighted "
-                "county means (ACS total population)."
+                "SDOH layers used by the Experience. Connecticut uses 2022+ planning-region "
+                "FIPS (091xx). ACS non-medical values for CT are population-weighted from legacy "
+                "county ACS where needed. State values are population-weighted county means."
             ),
             "value_type": "crude_prevalence_percent",
             "geographies": ["states", "counties"],

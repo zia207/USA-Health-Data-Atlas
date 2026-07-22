@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/alasql@4.4.0/dist/alasql.min.js"></script>
 <script src="assets/places_county_data.js"></script>
 <script src="assets/geojson_counties_fips.js"></script>
+<script src="assets/geojson_ct_planning_regions.js"></script>
 <script src="assets/geojson_us_states.js"></script>
 <script src="assets/superfund_npl_data.js"></script>
 <script src="assets/superfund_overlay.js"></script>
@@ -237,7 +238,9 @@ tr:nth-child(even) td { background: #f4f8f8; }
     <strong>Note:</strong> In the 2025 PLACES release, Kentucky and Pennsylvania have estimates only for five 2022-based measures
     (teeth lost, mammography, dental visit, colorectal screening, short sleep) because those states did not meet 2023 BRFSS
     minimums — see <a href="https://www.cdc.gov/places/current-release-notes/index.html" target="_blank" rel="noopener">CDC release notes</a>.
-    Non-Medical Factors (ACS) are available for both states. Basemap tiles © Esri, Google, OpenStreetMap.
+    Those counties appear hatched on the map when a measure is unavailable. Non-Medical Factors (ACS) are available for both states.
+    Connecticut uses 2022+ planning-region boundaries (FIPS <code>091xx</code>) instead of legacy counties.
+    Basemap tiles © Esri, Google, OpenStreetMap.
   </footer>
 
 <script>
@@ -521,12 +524,74 @@ function fitToLayer(layer, tight) {
 
 function featureCountyFips(f) {
   let fid = f.id;
-  if (fid == null && f.properties && f.properties.STATE != null) {
-    fid = String(f.properties.STATE).padStart(2,'0') + String(f.properties.COUNTY).padStart(3,'0');
+  if (fid == null && f.properties) {
+    if (f.properties.GEOID != null) fid = f.properties.GEOID;
+    else if (f.properties.STATE != null && f.properties.COUNTY != null) {
+      fid = String(f.properties.STATE).padStart(2,'0') + String(f.properties.COUNTY).padStart(3,'0');
+    }
   }
   fid = String(fid || '').replace(/^0500000US/, '');
   if (fid.length > 5) fid = fid.slice(-5);
   return fid.padStart(5, '0');
+}
+
+const CT_LEGACY_FIPS = new Set(['09001','09003','09005','09007','09009','09011','09013','09015']);
+const PLACES_GAP_STATES = new Set(['PA','KY']);
+const FIPS_STATE_ABBR = {
+  '01':'AL','02':'AK','04':'AZ','05':'AR','06':'CA','08':'CO','09':'CT','10':'DE','11':'DC','12':'FL',
+  '13':'GA','15':'HI','16':'ID','17':'IL','18':'IN','19':'IA','20':'KS','21':'KY','22':'LA','23':'ME',
+  '24':'MD','25':'MA','26':'MI','27':'MN','28':'MS','29':'MO','30':'MT','31':'NE','32':'NV','33':'NH',
+  '34':'NJ','35':'NM','36':'NY','37':'NC','38':'ND','39':'OH','40':'OK','41':'OR','42':'PA','44':'RI',
+  '45':'SC','46':'SD','47':'TN','48':'TX','49':'UT','50':'VT','51':'VA','53':'WA','54':'WV','55':'WI','56':'WY',
+};
+
+function fipsStateAbbr(fips) {
+  return FIPS_STATE_ABBR[String(fips || '').padStart(5,'0').slice(0, 2)] || '';
+}
+
+function useCtPlanningRegions(valueMap) {
+  if (!window.CT_PLANNING_REGION_GEO?.features) return false;
+  return window.CT_PLANNING_REGION_GEO.features.some((f) => valueMap[featureCountyFips(f)] !== undefined);
+}
+
+function countyMapFeatures(valueMap, stateFocus) {
+  const focus = stateFocus && stateFocus !== 'ALL' ? stateFocus : null;
+  const ctPlanning = useCtPlanningRegions(valueMap);
+  const features = [];
+
+  COUNTY_GEO.features.forEach((f) => {
+    const fips = featureCountyFips(f);
+    if (ctPlanning && CT_LEGACY_FIPS.has(fips)) return;
+    if (valueMap[fips] === undefined) return;
+    if (focus) {
+      const row = DATA.county_rows.find((r) => r[0] === fips);
+      if (!row || row[1] !== focus) return;
+    }
+    features.push(f);
+  });
+
+  if (ctPlanning) {
+    window.CT_PLANNING_REGION_GEO.features.forEach((f) => {
+      const fips = featureCountyFips(f);
+      if (valueMap[fips] === undefined) return;
+      if (focus && focus !== 'CT') return;
+      features.push(f);
+    });
+  }
+  return features;
+}
+
+function gapStateFeatures(stateFocus) {
+  const gapStates = gapStatesForMeasure(indCode());
+  if (!gapStates.size) return [];
+  const focus = stateFocus && stateFocus !== 'ALL' ? stateFocus : null;
+  return COUNTY_GEO.features.filter((f) => {
+    const fips = featureCountyFips(f);
+    const st = fipsStateAbbr(fips);
+    if (!gapStates.has(st)) return false;
+    if (focus && st !== focus) return false;
+    return true;
+  });
 }
 
 function renderStateMap(rows) {
@@ -575,16 +640,35 @@ function renderCountyMap(rows, stateFocus) {
   const vmin = sorted[Math.floor(sorted.length*0.02)] ?? sorted[0];
   const vmax = sorted[Math.floor(sorted.length*0.98)] ?? sorted[sorted.length-1];
   const focus = stateFocus && stateFocus !== 'ALL' ? stateFocus : null;
-  const features = COUNTY_GEO.features.filter((f) => {
-    const fips = featureCountyFips(f);
-    if (valueMap[fips] === undefined) return false;
-    if (focus) {
-      const row = DATA.county_rows.find((r) => r[0] === fips);
-      return row && row[1] === focus;
-    }
-    return true;
-  });
-  choropleth = L.geoJSON({ type: 'FeatureCollection', features }, {
+  const features = countyMapFeatures(valueMap, focus);
+  const gapFeatures = gapStateFeatures(focus);
+  const layers = [];
+
+  if (gapFeatures.length) {
+    const gapLayer = L.geoJSON({ type: 'FeatureCollection', features: gapFeatures }, {
+      style() {
+        return {
+          fillColor: '#e2e8f0',
+          color: '#64748b',
+          weight: focus ? 0.7 : 0.35,
+          fillOpacity: 0.55,
+          dashArray: '4 3',
+        };
+      },
+      onEachFeature(feature, layer) {
+        const fips = featureCountyFips(feature);
+        const st = fipsStateAbbr(fips);
+        const name = (feature.properties && feature.properties.NAME) || nameMap[fips] || fips;
+        layer.bindTooltip(
+          `<b>${name}</b><br>${st} · FIPS ${fips}<br><em>No PLACES estimate for this measure</em>`,
+          { sticky: true }
+        );
+      },
+    });
+    layers.push(gapLayer);
+  }
+
+  const dataLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
     style(feature) {
       const fips = featureCountyFips(feature);
       return { fillColor: colorScale(vmin,vmax,valueMap[fips]), color:'#0f172a', weight: focus?0.7:0.3, fillOpacity:0.78 };
@@ -594,18 +678,29 @@ function renderCountyMap(rows, stateFocus) {
       layer.bindTooltip(`<b>${nameMap[fips]||fips}</b><br>FIPS ${fips}<br>${indLabel()}: <b>${fmt(valueMap[fips])}%</b>`, { sticky:true });
     },
   });
+  layers.push(dataLayer);
+
+  choropleth = L.layerGroup(layers);
   choroplethGroup.addLayer(choropleth);
-  updateLegend(indLabel(), vmin, vmax, focus ? `Counties in ${focus}` : 'County choropleth');
+  const subtitle = focus
+    ? `Counties in ${focus}`
+    : (gapFeatures.length ? 'County choropleth · hatched = no PLACES estimate (KY/PA)' : 'County choropleth');
+  updateLegend(indLabel(), vmin, vmax, subtitle);
   if (choroplethVisible()) fitToLayer(choropleth, Boolean(focus));
 }
 
 // PLACES 2025: KY/PA only have these five 2022-carried measures (plus ACS non-medical).
 const PLACES_KY_PA_MEASURES = new Set(['TEETHLOST','MAMMOUSE','DENTAL','COLON_SCREEN','SLEEP']);
-const ACS_CODES = new Set((window.PLACES_DATA?.meta?.indicators || []).filter((i) => i.source === 'acs').map((i) => i.code));
+let ACS_CODES = new Set();
+
+function gapStatesForMeasure(code) {
+  if (ACS_CODES.has(code) || PLACES_KY_PA_MEASURES.has(code)) return new Set();
+  return PLACES_GAP_STATES;
+}
 
 function gapNote(code) {
   if (ACS_CODES.has(code) || PLACES_KY_PA_MEASURES.has(code)) return '';
-  return ' · KY & PA blank for this measure (2023 BRFSS gap in PLACES 2025).';
+  return ' · KY & PA hatched (no 2023 BRFSS estimate in PLACES 2025).';
 }
 
 function runSQL() {
@@ -685,6 +780,7 @@ function init() {
     DATA = window.PLACES_DATA;
     IND = DATA.meta.indicators;
     CODES = DATA.meta.codes;
+    ACS_CODES = new Set(IND.filter((i) => i.source === 'acs').map((i) => i.code));
     COUNTY_GEO = window.COUNTY_GEO;
     STATE_GEO = window.STATE_GEO;
     COUNTY_GEO.features.forEach((f) => { f.id = featureCountyFips(f); });
