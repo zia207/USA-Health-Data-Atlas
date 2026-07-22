@@ -2194,7 +2194,9 @@ df = model_frame`;
     const vals = Object.values(fipsToVal);
     const maxAbs = Math.max(...vals.map((v) => Math.abs(v)), 1e-9);
     window.SpatialStatistics.renderChoropleth('ml-shap-map', fipsToVal, {
-      palette: 'RdBu',
+      palette: 'spectral',
+      diverging: true,
+      title: `SHAP φ · ${feat}`,
       vmin: -maxAbs,
       vmax: maxAbs,
     });
@@ -2222,7 +2224,13 @@ df = model_frame`;
     if (thead) thead.innerHTML = '';
     if (tbody) tbody.innerHTML = '<tr><td>—</td></tr>';
     if (status) status.textContent = 'Compute SHAP charts, then click Build county SHAP frame.';
-    if (mapEl) mapEl.innerHTML = '';
+    if (mapEl) {
+      if (window.SpatialStatistics?.destroyMap) {
+        window.SpatialStatistics.destroyMap('ml-shap-map');
+      } else {
+        mapEl.innerHTML = '';
+      }
+    }
   }
 
   function mlSplitConfig() {
@@ -4342,7 +4350,6 @@ plt.show()`;
         el.style.color = 'var(--good)';
       }
       setTimeout(() => window.SpatialStatistics?.invalidateMaps?.(), 150);
-      applySpatialMapStyle();
       return res;
     } catch (e) {
       if (el) {

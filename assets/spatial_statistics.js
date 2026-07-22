@@ -573,13 +573,40 @@
   }
 
   function destroyMap(id) {
-    if (legendControls[id]) {
-      try { legendControls[id].remove(); } catch (_) { /* ignore */ }
-      delete legendControls[id];
+    const el = typeof id === 'string' ? document.getElementById(id) : null;
+    const key = typeof id === 'string' ? id : el?.id;
+
+    if (key && legendControls[key]) {
+      try { legendControls[key].remove(); } catch (_) { /* ignore */ }
+      delete legendControls[key];
     }
-    if (maps[id]) {
-      maps[id].remove();
-      delete maps[id];
+
+    if (key && maps[key]) {
+      try {
+        maps[key].off();
+        maps[key].remove();
+      } catch (_) { /* ignore */ }
+      delete maps[key];
+    } else if (el && el._atlasMap) {
+      try {
+        el._atlasMap.off();
+        el._atlasMap.remove();
+      } catch (_) { /* ignore */ }
+      delete el._atlasMap;
+    }
+
+    if (el) {
+      if (el._leaflet_id != null) delete el._leaflet_id;
+      el.innerHTML = '';
+      if (el.dataset.mapBaseClass) {
+        el.className = el.dataset.mapBaseClass;
+      } else {
+        el.classList.remove(
+          'leaflet-container', 'leaflet-touch', 'leaflet-retina', 'leaflet-fade-anim',
+          'leaflet-grab', 'leaflet-touch-drag', 'leaflet-touch-zoom',
+        );
+      }
+      el.removeAttribute('tabindex');
     }
   }
 
@@ -662,6 +689,8 @@
     const vals = Object.values(fipsToVal).filter(Number.isFinite);
     if (!vals.length && !merged.categorical) return null;
 
+    if (!el.dataset.mapBaseClass) el.dataset.mapBaseClass = el.className || 'spatial-map';
+
     const colors = paletteForOpts(merged);
     const vmin = merged.vmin != null ? merged.vmin : Math.min(...vals);
     const vmax = merged.vmax != null ? merged.vmax : Math.max(...vals);
@@ -717,6 +746,7 @@
     }).addTo(map);
 
     maps[containerId] = map;
+    el._atlasMap = map;
     fitConus(map);
     if (!merged.categorical && colors && breaks) {
       const classLabel = {
@@ -758,11 +788,12 @@
     const sx = (v) => pad + ((v - xmin) / ((xmax - xmin) || 1)) * (w - pad - 12);
     const sy = (v) => h - pad - ((v - ymin) / ((ymax - ymin) || 1)) * (h - pad - 12);
     const dots = xs.map((v, i) => `<circle cx="${sx(v)}" cy="${sy(ys[i])}" r="2.5" fill="#14707e" fill-opacity="0.45"/>`).join('');
-    const m = I;
+    const m = Number.isFinite(I) ? I : 0;
+    const iLabel = Number.isFinite(I) ? I.toFixed(3) : '—';
     const x0 = xmin; const x1 = xmax;
     const y0 = m * x0; const y1 = m * x1;
     const line = `<line x1="${sx(x0)}" y1="${sy(y0)}" x2="${sx(x1)}" y2="${sy(y1)}" stroke="#0b1f2a" stroke-width="2"/>`;
-    el.innerHTML = `<svg width="${w}" height="${h}" role="img"><text x="${pad}" y="16" font-size="12">${title} (I=${I.toFixed(3)})</text>${dots}${line}</svg>`;
+    el.innerHTML = `<svg width="${w}" height="${h}" role="img"><text x="${pad}" y="16" font-size="12">${title} (R²=${iLabel})</text>${dots}${line}</svg>`;
   }
 
   function drawHist(el, values, title) {
@@ -798,11 +829,13 @@
     const maxV = Math.max(...rows.map((r) => r[1]), 1e-9);
     const barH = (h - padT - padB) / rows.length;
     const bars = rows.map((r, i) => {
-      const bw = ((r[1] / maxV) * (w - padL - padR));
+      const val = Number(r[1]);
+      const safeVal = Number.isFinite(val) ? val : 0;
+      const bw = ((safeVal / maxV) * (w - padL - padR));
       const y = padT + i * barH + 4;
       return `<text x="${padL - 6}" y="${y + barH / 2}" font-size="11" text-anchor="end" dominant-baseline="middle">${r[0]}</text>`
         + `<rect x="${padL}" y="${y}" width="${Math.max(1, bw)}" height="${Math.max(8, barH - 8)}" fill="#F18F01"/>`
-        + `<text x="${padL + bw + 4}" y="${y + barH / 2}" font-size="10" dominant-baseline="middle">${r[1].toFixed(3)}</text>`;
+        + `<text x="${padL + bw + 4}" y="${y + barH / 2}" font-size="10" dominant-baseline="middle">${safeVal.toFixed(3)}</text>`;
     }).join('');
     el.innerHTML = `<svg width="${w}" height="${h}"><text x="${padL}" y="14" font-size="12">${title}</text>${bars}</svg>`;
   }
@@ -1210,6 +1243,15 @@
     if (modelType === 'slx') {
       active = slx;
       activeLabel = 'SLX';
+      data.forEach((d, i) => { mapVals[d.fips] = slx.resid[i]; });
+      renderChoropleth('spatial-map-reg', mapVals, { diverging: true, title: 'SLX residuals' });
+      drawMoranScatter(
+        document.getElementById('spatial-chart-reg-scatter'),
+        y,
+        slx.yhat,
+        slx.r2,
+        'Observed vs SLX fitted'
+      );
       coeffLines = slxDesign.names.map((name, i) => (
         `  ${name.padEnd(14)}: ${slx.beta[i].toFixed(3)}`
       ));

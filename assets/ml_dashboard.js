@@ -785,8 +785,10 @@
       featIdx.forEach((j) => { if (coal.has(j)) hybrid[j] = x[j]; });
       return hybrid;
     });
-    const preds = model.predict(hybrids);
-    return preds.reduce((s, v) => s + v, 0) / preds.length;
+    const preds = model.predict(hybrids) || [];
+    const finite = preds.filter((v) => Number.isFinite(v));
+    if (!finite.length) return 0;
+    return finite.reduce((s, v) => s + v, 0) / finite.length;
   }
 
   function exactShapley(model, x, bgX, featIdx) {
@@ -816,7 +818,8 @@
       phi[i] = sum;
     }
     const base = vOf([]);
-    const pred = model.predict([x])[0];
+    const predRaw = model.predict([x])[0];
+    const pred = Number.isFinite(predRaw) ? predRaw : base;
     return { phi, base, pred, featIdx };
   }
 
@@ -860,15 +863,24 @@
     return s.padStart(5, '0').slice(-5);
   }
 
+  function resolveShapFeatureIndices(topNames, features) {
+    const featIdx = topNames.map((f) => features.indexOf(f)).filter((j) => j >= 0);
+    if (!featIdx.length) throw new Error('No valid SHAP features found in the modeling frame.');
+    return featIdx;
+  }
+
   function buildCountyShapRow(meta, topNames, phi, base, pred) {
+    const safeBase = Number.isFinite(base) ? base : 0;
+    const safePred = Number.isFinite(pred) ? pred : safeBase;
     const row = {
       fips: normalizeShapFips(meta?.fips),
       year: meta?.year ?? '',
-      shap_base: Math.round(base * 10000) / 10000,
-      shap_pred: Math.round(pred * 10000) / 10000,
+      shap_base: Math.round(safeBase * 10000) / 10000,
+      shap_pred: Math.round(safePred * 10000) / 10000,
     };
     topNames.forEach((name, i) => {
-      row[shapFieldName(name)] = Math.round(phi[i] * 10000) / 10000;
+      const v = Number(phi[i]);
+      row[shapFieldName(name)] = Math.round((Number.isFinite(v) ? v : 0) * 10000) / 10000;
     });
     return row;
   }
@@ -895,7 +907,7 @@
     const maxLocal = opts?.maxLocal || 3;
     const maxGlobalRows = opts?.maxGlobalRows || 32;
     const topNames = opts?.topFeatures || fastTopFeatures(model, features, opts?.pearsonImp, topK);
-    const featIdx = topNames.map((f) => features.indexOf(f));
+    const featIdx = resolveShapFeatureIndices(topNames, features);
     const rng = mulberry32(SEED + 7);
     const bgX = X.length <= maxBg ? X : shuffleIdx(X.length, rng)
       .slice(0, maxBg).map((i) => X[i]);
@@ -923,16 +935,17 @@
 
   function computeShapAnalysisAsync(model, X, y, features, opts, onProgress) {
     return new Promise((resolve, reject) => {
-      if (!model || !X.length || !features.length) {
-        resolve(null);
-        return;
-      }
-      const topK = opts?.topK || 4;
+      try {
+        if (!model || !X.length || !features.length) {
+          resolve(null);
+          return;
+        }
+        const topK = opts?.topK || 4;
       const maxBg = opts?.maxBg || 12;
       const maxLocal = opts?.maxLocal || 3;
       const maxGlobalRows = opts?.maxGlobalRows || 32;
       const topNames = opts?.topFeatures || fastTopFeatures(model, features, opts?.pearsonImp, topK);
-      const featIdx = topNames.map((f) => features.indexOf(f));
+      const featIdx = resolveShapFeatureIndices(topNames, features);
       const rng = mulberry32(SEED + 7);
       const bgX = X.length <= maxBg ? X : shuffleIdx(X.length, rng)
         .slice(0, maxBg).map((i) => X[i]);
@@ -996,55 +1009,62 @@
         }
       };
       setTimeout(step, 0);
+      } catch (err) {
+        reject(err);
+      }
     });
   }
 
   function computeShapCountyFrameAsync(model, X, evalMeta, features, opts, onProgress) {
     return new Promise((resolve, reject) => {
-      if (!model || !X.length || !Array.isArray(evalMeta) || evalMeta.length !== X.length) {
-        resolve(null);
-        return;
-      }
-      const topK = opts?.topK || 4;
-      const maxBg = opts?.maxBg || (model?.type === 'ensemble' ? 6 : 10);
-      const topNames = opts?.topFeatures || fastTopFeatures(model, features, opts?.pearsonImp, topK);
-      const featIdx = topNames.map((f) => features.indexOf(f));
-      const rng = mulberry32(SEED + 7);
-      const bgX = X.length <= maxBg ? X : shuffleIdx(X.length, rng)
-        .slice(0, maxBg).map((ii) => X[ii]);
-      const useAll = opts?.allEvalCounties === true;
-      const cap = opts?.maxCountyRows != null ? opts.maxCountyRows : Math.min(X.length, 200);
-      const indices = useAll
-        ? Array.from({ length: X.length }, (_, ii) => ii)
-        : shuffleIdx(X.length, mulberry32(SEED + 19)).slice(0, Math.min(cap, X.length));
-      const countyFrame = [];
-      let i = 0;
-      const yieldMs = opts?.yieldMs ?? 14;
-      const step = () => {
-        try {
-          const rowIdx = indices[i];
-          const x = X[rowIdx];
-          const { phi, base, pred } = exactShapley(model, x, bgX, featIdx);
-          countyFrame.push(buildCountyShapRow(evalMeta[rowIdx], topNames, phi, base, pred));
-          i += 1;
-          if (onProgress) onProgress(`County SHAP: ${i}/${indices.length}…`);
-          if (i < indices.length) {
-            setTimeout(step, yieldMs);
-          } else {
-            resolve({
-              topFeatures: topNames,
-              countyFrame,
-              n: indices.length,
-              bgSize: bgX.length,
-              sampled: !useAll && indices.length < X.length,
-              totalEval: X.length,
-            });
-          }
-        } catch (err) {
-          reject(err);
+      try {
+        if (!model || !X.length || !Array.isArray(evalMeta) || evalMeta.length !== X.length) {
+          resolve(null);
+          return;
         }
-      };
-      setTimeout(step, 0);
+        const topK = opts?.topK || 4;
+        const maxBg = opts?.maxBg || (model?.type === 'ensemble' ? 6 : 10);
+        const topNames = opts?.topFeatures || fastTopFeatures(model, features, opts?.pearsonImp, topK);
+        const featIdx = resolveShapFeatureIndices(topNames, features);
+        const rng = mulberry32(SEED + 7);
+        const bgX = X.length <= maxBg ? X : shuffleIdx(X.length, rng)
+          .slice(0, maxBg).map((ii) => X[ii]);
+        const useAll = opts?.allEvalCounties === true;
+        const cap = opts?.maxCountyRows != null ? opts.maxCountyRows : Math.min(X.length, 200);
+        const indices = useAll
+          ? Array.from({ length: X.length }, (_, ii) => ii)
+          : shuffleIdx(X.length, mulberry32(SEED + 19)).slice(0, Math.min(cap, X.length));
+        const countyFrame = [];
+        let i = 0;
+        const yieldMs = opts?.yieldMs ?? 14;
+        const step = () => {
+          try {
+            const rowIdx = indices[i];
+            const x = X[rowIdx];
+            const { phi, base, pred } = exactShapley(model, x, bgX, featIdx);
+            countyFrame.push(buildCountyShapRow(evalMeta[rowIdx], topNames, phi, base, pred));
+            i += 1;
+            if (onProgress) onProgress(`County SHAP: ${i}/${indices.length}…`);
+            if (i < indices.length) {
+              setTimeout(step, yieldMs);
+            } else {
+              resolve({
+                topFeatures: topNames,
+                countyFrame,
+                n: indices.length,
+                bgSize: bgX.length,
+                sampled: !useAll && indices.length < X.length,
+                totalEval: X.length,
+              });
+            }
+          } catch (err) {
+            reject(err);
+          }
+        };
+        setTimeout(step, 0);
+      } catch (err) {
+        reject(err);
+      }
     });
   }
 
@@ -1080,12 +1100,13 @@
       const barW = w - 180;
       let x = 100;
       svg += `<text x="8" y="${y0 + 14}" font-size="10">Row ${inst.rowIdx + 1}</text>`;
-      svg += `<text x="8" y="${y0 + 28}" font-size="9" fill="#666">base ${inst.base.toFixed(3)} → ${inst.pred.toFixed(3)}</text>`;
+      svg += `<text x="8" y="${y0 + 28}" font-size="9" fill="#666">base ${Number.isFinite(inst.base) ? inst.base.toFixed(3) : '—'} → ${Number.isFinite(inst.pred) ? inst.pred.toFixed(3) : '—'}</text>`;
       inst.names.forEach((name, j) => {
         const v = inst.phi[j];
-        const bw = (Math.abs(v) / maxAbs) * (barW / inst.names.length - 4);
-        const col = v >= 0 ? '#97C459' : '#F09595';
-        const dir = v >= 0 ? 1 : -1;
+        const safeV = Number.isFinite(v) ? v : 0;
+        const bw = (Math.abs(safeV) / maxAbs) * (barW / inst.names.length - 4);
+        const col = safeV >= 0 ? '#97C459' : '#F09595';
+        const dir = safeV >= 0 ? 1 : -1;
         if (dir > 0) {
           svg += `<rect x="${x}" y="${y0 + 8}" width="${Math.max(2, bw)}" height="14" fill="${col}" rx="1"/>`;
           x += bw;
@@ -1094,7 +1115,7 @@
           svg += `<rect x="${x}" y="${y0 + 8}" width="${Math.max(2, bw)}" height="14" fill="${col}" rx="1"/>`;
         }
         svg += `<text x="${100 + j * (barW / inst.names.length)}" y="${y0 + 52}" font-size="8" text-anchor="middle">${name.slice(0, 10)}</text>`;
-        svg += `<text x="${100 + j * (barW / inst.names.length)}" y="${y0 + 62}" font-size="8" text-anchor="middle" fill="#666">${v >= 0 ? '+' : ''}${v.toFixed(3)}</text>`;
+        svg += `<text x="${100 + j * (barW / inst.names.length)}" y="${y0 + 62}" font-size="8" text-anchor="middle" fill="#666">${safeV >= 0 ? '+' : ''}${safeV.toFixed(3)}</text>`;
       });
     });
     el.innerHTML = `<svg width="${w}" height="${h}" role="img">${svg}</svg>`;
