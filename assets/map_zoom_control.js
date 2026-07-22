@@ -95,6 +95,7 @@
     div.className = 'atlas-zoom';
     const minZ = map.getMinZoom();
     const maxZ = map.getMaxZoom();
+    const initZ = Number.isFinite(map.getZoom?.()) ? map.getZoom() : minZ;
     div.innerHTML = `
       <strong>Zoom</strong>
       <div class="atlas-zoom-row">
@@ -104,7 +105,7 @@
         <button type="button" data-z="1" title="Zoom in">+</button>
         <button type="button" data-z="2" title="Zoom in a lot">++</button>
       </div>
-      <input type="range" class="atlas-zoom-slider" min="${minZ}" max="${maxZ}" step="0.25" value="${map.getZoom()}"/>
+      <input type="range" class="atlas-zoom-slider" min="${minZ}" max="${maxZ}" step="0.25" value="${initZ}"/>
       <button type="button" class="atlas-zoom-reset">Reset view</button>
     `;
 
@@ -112,10 +113,13 @@
     const slider = div.querySelector('.atlas-zoom-slider');
 
     function sync() {
-      const z = map.getZoom();
+      const z = map.getZoom?.();
+      if (!Number.isFinite(z)) return;
       valEl.textContent = z.toFixed(2);
-      slider.min = String(map.getMinZoom());
-      slider.max = String(map.getMaxZoom());
+      const minZ = map.getMinZoom?.();
+      const maxZ = map.getMaxZoom?.();
+      if (Number.isFinite(minZ)) slider.min = String(minZ);
+      if (Number.isFinite(maxZ)) slider.max = String(maxZ);
       slider.value = String(z);
     }
 
@@ -133,7 +137,7 @@
     });
 
     map.on('zoom zoomend', sync);
-    sync();
+    try { sync(); } catch (_) { /* ignore during map teardown */ }
     return div;
   }
 

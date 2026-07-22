@@ -4608,7 +4608,8 @@ plt.show()`;
       const y2Col = document.getElementById('spatial-y2-gw').value;
       const xCols = selectedFromList('spatial-x-gw').filter((c) => c !== yCol);
       const bwRaw = document.getElementById('spatial-bw-gw').value;
-      const bandwidthKm = bwRaw ? Number(bwRaw) : null;
+      const bwNum = Number(bwRaw);
+      const bandwidthKm = bwRaw && Number.isFinite(bwNum) && bwNum > 0 ? bwNum : null;
       if (modelType === 'gwcorr' && yCol === y2Col) throw new Error('Choose two different variables for GWCORR.');
       const res = window.SpatialStatistics.runGeographicallyWeighted(
         spatialRows(), modelType, yCol, y2Col, xCols, bandwidthKm

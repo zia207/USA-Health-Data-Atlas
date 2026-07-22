@@ -11,6 +11,42 @@
   const legendControls = {};
   const lastChoropleths = new Map();
 
+  function normalizeSpatialFips(v) {
+    if (v == null || v === '') return '';
+    const digits = String(v).replace(/\D/g, '');
+    if (!digits) return '';
+    return (digits.length > 5 ? digits.slice(-5) : digits).padStart(5, '0');
+  }
+
+  function fmtNum(v, digits = 3) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '—';
+    if (Math.abs(n) >= 1000 && digits <= 1) {
+      return n.toLocaleString(undefined, { maximumFractionDigits: digits });
+    }
+    return n.toFixed(digits);
+  }
+
+  function meanOf(vals) {
+    const finite = (vals || []).filter((v) => Number.isFinite(Number(v))).map(Number);
+    if (!finite.length) return null;
+    return finite.reduce((s, v) => s + v, 0) / finite.length;
+  }
+
+  function minOf(vals) {
+    const finite = (vals || []).filter((v) => Number.isFinite(Number(v))).map(Number);
+    return finite.length ? Math.min(...finite) : null;
+  }
+
+  function maxOf(vals) {
+    const finite = (vals || []).filter((v) => Number.isFinite(Number(v))).map(Number);
+    return finite.length ? Math.max(...finite) : null;
+  }
+
+  function isFiniteNum(v) {
+    return v != null && Number.isFinite(Number(v));
+  }
+
   function haversineKm(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -59,24 +95,28 @@
 
   function prepareData(rows, yCol, popCol) {
     if (!rows.length) throw new Error('No rows in model_frame. Build a dataframe first.');
+    if (!yCol) throw new Error('Select an outcome variable.');
     const out = [];
     rows.forEach((r) => {
-      const fips = String(r.fips).padStart(5, '0');
+      const fips = normalizeSpatialFips(r.fips);
+      if (!fips) return;
       const c = getCentroid(fips);
       if (!c) return;
       const y = Number(r[yCol]);
-      if (!Number.isFinite(y)) return;
+      if (!isFiniteNum(y)) return;
       const pop = popCol ? Number(r[popCol]) : null;
       out.push({
         fips,
         y,
         lat: c[0],
         lon: c[1],
-        pop: Number.isFinite(pop) ? pop : 1,
+        pop: isFiniteNum(pop) ? pop : 1,
         row: r,
       });
     });
-    if (out.length < 20) throw new Error(`Too few counties with valid ${yCol} and geometry (n=${out.length}).`);
+    if (out.length < 20) {
+      throw new Error(`Too few counties with valid ${yCol} and geometry (n=${out.length}). Check imputation or geography.`);
+    }
     return out;
   }
 
@@ -84,18 +124,29 @@
     if (!rows.length) throw new Error('No rows in model_frame. Build a dataframe first.');
     const out = [];
     rows.forEach((r) => {
-      const fips = String(r.fips).padStart(5, '0');
+      const fips = normalizeSpatialFips(r.fips);
+      if (!fips) return;
       const c = getCentroid(fips);
       if (!c) return;
       const x = Number(r[xCol]);
       const y = Number(r[yCol]);
-      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      if (!isFiniteNum(x) || !isFiniteNum(y)) return;
       out.push({ fips, x, y, lat: c[0], lon: c[1], row: r });
     });
     if (out.length < 20) {
-      throw new Error(`Too few counties with valid ${xCol}, ${yCol} and geometry (n=${out.length}).`);
+      throw new Error(`Too few counties with valid ${xCol}, ${yCol} and geometry (n=${out.length}). Try mean/median imputation in Data Pipeline.`);
     }
     return out;
+  }
+
+  function prepareRegressionData(rows, yCol, xCols, popCol) {
+    const data = prepareData(rows, yCol, popCol);
+    if (!xCols || !xCols.length) return data;
+    const complete = data.filter((d) => xCols.every((c) => isFiniteNum(d.row[c])));
+    if (complete.length < 20) {
+      throw new Error(`Too few complete cases for regression (n=${complete.length}). Impute missing features or drop incomplete rows in Data Pipeline.`);
+    }
+    return complete;
   }
 
   function buildWeights(data, type) {
@@ -151,6 +202,10 @@
     const zz = z.reduce((s, v) => s + v * v, 0);
     const S0 = W.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0);
     const Wz = matVec(W, z);
+    if (!Number.isFinite(zz) || zz <= 0 || !Number.isFinite(S0) || S0 <= 0) {
+      const Iperm = [];
+      return { I: 0, EI: -1 / Math.max(n - 1, 1), zScore: 0, pValue: 1, Iperm, Wz, z, mean };
+    }
     const Iobs = (n / S0) * z.reduce((s, v, i) => s + v * Wz[i], 0) / zz;
     const EI = -1 / (n - 1);
     const rng = mulberry32(seed || 42);
@@ -172,6 +227,13 @@
     const z = y.map((v) => v - mean);
     const varZ = z.reduce((s, v) => s + v * v, 0) / n;
     const Wz = matVec(W, z);
+    if (!Number.isFinite(varZ) || varZ <= 0) {
+      return {
+        Ilocal: new Array(n).fill(0),
+        pvals: new Array(n).fill(1),
+        cluster: new Array(n).fill('NS'),
+      };
+    }
     const Ilocal = z.map((v, i) => v * Wz[i] / varZ);
     const rng = mulberry32(seed || 42);
     const pvals = new Array(n).fill(0);
@@ -316,7 +378,7 @@
         for (let b = 0; b < p; b++) XtX[a][b] += X[i][a] * X[i][b];
       }
     }
-    const beta = solveLinear(XtX, Xty);
+    const beta = solveLinear(XtX, Xty).map((b) => (Number.isFinite(Number(b)) ? Number(b) : 0));
     const yhat = y.map((_, i) => X[i].reduce((s, v, j) => s + v * beta[j], 0));
     const resid = y.map((v, i) => v - yhat[i]);
     const ybar = y.reduce((s, v) => s + v, 0) / n;
@@ -428,11 +490,12 @@
   }
 
   function fmtBreak(v) {
-    if (!Number.isFinite(v)) return '—';
-    if (Math.abs(v) >= 1000) return v.toLocaleString(undefined, { maximumFractionDigits: 1 });
-    if (Math.abs(v) >= 10) return v.toFixed(1);
-    if (Math.abs(v) >= 1) return v.toFixed(2);
-    return v.toFixed(3);
+    const n = Number(v);
+    if (!Number.isFinite(n)) return '—';
+    if (Math.abs(n) >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 1 });
+    if (Math.abs(n) >= 10) return n.toFixed(1);
+    if (Math.abs(n) >= 1) return n.toFixed(2);
+    return n.toFixed(3);
   }
 
   function palette(id) {
@@ -583,12 +646,14 @@
 
     if (key && maps[key]) {
       try {
+        maps[key].off('zoom zoomend');
         maps[key].off();
         maps[key].remove();
       } catch (_) { /* ignore */ }
       delete maps[key];
     } else if (el && el._atlasMap) {
       try {
+        el._atlasMap.off('zoom zoomend');
         el._atlasMap.off();
         el._atlasMap.remove();
       } catch (_) { /* ignore */ }
@@ -713,7 +778,9 @@
     }).addTo(map);
 
     if (global.attachMapZoomControl) {
-      attachMapZoomControl(map, { bounds: L.latLngBounds(USA_BOUNDS) });
+      try {
+        global.attachMapZoomControl(map, { bounds: L.latLngBounds(USA_BOUNDS) });
+      } catch (_) { /* ignore zoom panel errors */ }
     }
 
     const layer = L.geoJSON(global.COUNTY_GEO, {
@@ -779,10 +846,22 @@
 
   function drawMoranScatter(el, y, Wz, I, title) {
     if (!el) return;
+    const pairs = [];
+    const n = Math.min((y || []).length, (Wz || []).length);
+    for (let i = 0; i < n; i++) {
+      const xv = Number(y[i]);
+      const yv = Number(Wz[i]);
+      if (Number.isFinite(xv) && Number.isFinite(yv)) pairs.push([xv, yv]);
+    }
+    if (!pairs.length) {
+      el.innerHTML = `<p class="note" style="padding:12px;margin:0">${title || 'Moran scatter'} — insufficient data.</p>`;
+      return;
+    }
+    const xs = pairs.map((p) => p[0]);
+    const ys = pairs.map((p) => p[1]);
     const w = Math.max(320, el.clientWidth || 400);
     const h = Math.max(200, el.clientHeight || 260);
     const pad = 40;
-    const xs = y; const ys = Wz;
     const xmin = Math.min(...xs); const xmax = Math.max(...xs);
     const ymin = Math.min(...ys); const ymax = Math.max(...ys);
     const sx = (v) => pad + ((v - xmin) / ((xmax - xmin) || 1)) * (w - pad - 12);
@@ -869,31 +948,40 @@
     if (!rows.length) throw new Error('No rows in model_frame. Build a dataframe first.');
     const out = [];
     rows.forEach((r) => {
-      const fips = String(r.fips).padStart(5, '0');
+      const fips = normalizeSpatialFips(r.fips);
+      if (!fips) return;
       const c = getCentroid(fips);
       if (!c) return;
       const y = Number(r[yCol]);
-      if (!Number.isFinite(y)) return;
+      if (!isFiniteNum(y)) return;
       const item = { fips, y, lat: c[0], lon: c[1], row: r };
       if (y2Col) {
         const y2 = Number(r[y2Col]);
-        if (!Number.isFinite(y2)) return;
+        if (!isFiniteNum(y2)) return;
         item.y2 = y2;
       }
       if (xCols && xCols.length) {
         const xs = xCols.map((col) => Number(r[col]));
-        if (xs.some((v) => !Number.isFinite(v))) return;
+        if (xs.some((v) => !isFiniteNum(v))) return;
         item.x = xs;
       }
       out.push(item);
     });
-    if (out.length < 20) throw new Error(`Too few counties with valid data (n=${out.length}).`);
+    if (out.length < 20) {
+      throw new Error(`Too few counties with valid data (n=${out.length}). Try imputation in Data Pipeline.`);
+    }
     return out;
+  }
+
+  function resolveBandwidthKm(bandwidthKm, dists) {
+    return (Number.isFinite(bandwidthKm) && bandwidthKm > 0)
+      ? bandwidthKm
+      : autoBandwidthKm(dists);
   }
 
   function gwCorr(y1, y2, dists, bandwidthKm) {
     const n = y1.length;
-    const bw = bandwidthKm || autoBandwidthKm(dists);
+    const bw = resolveBandwidthKm(bandwidthKm, dists);
     const localR = new Array(n);
     for (let i = 0; i < n; i++) {
       const w = dists[i].map((d) => Math.exp(-(d * d) / (2 * bw * bw)));
@@ -917,7 +1005,7 @@
   function gwOLS(data, xCols, bandwidthKm) {
     const coords = data.map((d) => [d.lat, d.lon]);
     const dists = distanceMatrixKm(coords);
-    const bw = bandwidthKm || autoBandwidthKm(dists);
+    const bw = resolveBandwidthKm(bandwidthKm, dists);
     const n = data.length;
     const y = data.map((d) => d.y);
     const X = data.map((d) => [1, ...xCols.map((c) => Number(d.row[c]))]);
@@ -995,7 +1083,7 @@
   function gwRF(data, xCols, bandwidthKm, seed) {
     const coords = data.map((d) => [d.lat, d.lon]);
     const dists = distanceMatrixKm(coords);
-    const bw = bandwidthKm || autoBandwidthKm(dists);
+    const bw = resolveBandwidthKm(bandwidthKm, dists);
     const n = data.length;
     const y = data.map((d) => d.y);
     const X = data.map((d) => xCols.map((c) => Number(d.row[c])));
@@ -1051,14 +1139,17 @@
         chartEl.innerHTML = '<p class="note" style="padding:12px;margin:0;height:100%;display:flex;align-items:center;justify-content:center;text-align:center">Local Pearson r at each county (blue = negative, red = positive).</p>';
       }
       const valid = res.localR.filter(Number.isFinite);
+      const meanR = meanOf(valid);
+      const minR = minOf(valid);
+      const maxR = maxOf(valid);
       return {
         summary: [
           `GWCORR: local Pearson r between ${yCol} and ${y2Col}`,
-          `Counties: ${data.length}  ·  bandwidth ≈ ${res.bandwidth.toFixed(0)} km`,
-          `Mean local r = ${(valid.reduce((s, v) => s + v, 0) / valid.length).toFixed(3)}`,
-          `Range: [${Math.min(...valid).toFixed(3)}, ${Math.max(...valid).toFixed(3)}]`,
+          `Counties: ${data.length}  ·  bandwidth ≈ ${fmtNum(res.bandwidth, 0)} km`,
+          `Mean local r = ${fmtNum(meanR)}`,
+          `Range: [${fmtNum(minR)}, ${fmtNum(maxR)}]`,
         ].join('\n'),
-        kpis: { main: (valid.reduce((s, v) => s + v, 0) / valid.length).toFixed(3), bw: res.bandwidth.toFixed(0), n: data.length },
+        kpis: { main: fmtNum(meanR), bw: fmtNum(res.bandwidth, 0), n: data.length },
         betaOptions: null,
       };
     }
@@ -1083,11 +1174,11 @@
       return {
         summary: [
           `GW-OLS: ${yCol} ~ ${xCols.join(' + ')}`,
-          `Counties: ${data.length}  ·  bandwidth ≈ ${res.bandwidth.toFixed(0)} km`,
-          `Global R² (GW-OLS): ${res.r2.toFixed(3)}`,
+          `Counties: ${data.length}  ·  bandwidth ≈ ${fmtNum(res.bandwidth, 0)} km`,
+          `Global R² (GW-OLS): ${fmtNum(res.r2)}`,
           `Map shows local β for ${mapCol} (change via dropdown after run).`,
         ].join('\n'),
-        kpis: { main: res.r2.toFixed(3), bw: res.bandwidth.toFixed(0), n: data.length },
+        kpis: { main: fmtNum(res.r2), bw: fmtNum(res.bandwidth, 0), n: data.length },
         betaOptions: xCols,
         gwResult: { type: 'gwols', data, res, xCols },
       };
@@ -1107,14 +1198,14 @@
     return {
       summary: [
         `GW-RF: local feature importance for ${yCol}`,
-        `Counties: ${data.length}  ·  bandwidth ≈ ${res.bandwidth.toFixed(0)} km`,
-        `Local R² proxy: ${res.r2proxy.toFixed(3)}`,
+        `Counties: ${data.length}  ·  bandwidth ≈ ${fmtNum(res.bandwidth, 0)} km`,
+        `Local R² proxy: ${fmtNum(res.r2proxy)}`,
         'Browser uses weighted local association; full GW-RF in Python export.',
         '',
         'Global importance:',
-        ...res.globalImp.map(([name, val]) => `  ${name}: ${val.toFixed(3)}`),
+        ...res.globalImp.map(([name, val]) => `  ${name}: ${fmtNum(val)}`),
       ].join('\n'),
-      kpis: { main: res.r2proxy.toFixed(3), bw: res.bandwidth.toFixed(0), n: data.length },
+      kpis: { main: fmtNum(res.r2proxy), bw: fmtNum(res.bandwidth, 0), n: data.length },
       betaOptions: xCols,
       gwResult: { type: 'gwrf', data, res, xCols },
     };
@@ -1176,7 +1267,7 @@
         `  LL (low ${xCol}, low neighbour ${yCol}): ${counts.LL}`,
         `  HL / LH (discordant): ${counts.HL + counts.LH}   Not significant: ${counts.NS}`,
       ].join('\n'),
-      table: Object.entries(counts).map(([k, v]) => [k, v, (100 * v / data.length).toFixed(1) + '%']),
+      table: Object.entries(counts).map(([k, v]) => [k, v, fmtNum(100 * v / data.length, 1) + '%']),
       kpis: { hh: counts.HH, sig, n: data.length },
     };
   }
@@ -1190,8 +1281,6 @@
     const localRes = localMoransI(y, W, Math.min(perm, 199));
     const fipsCluster = {};
     data.forEach((d, i) => { fipsCluster[d.fips] = localRes.cluster[i]; });
-    const fipsLisa = {};
-    data.forEach((d, i) => { fipsLisa[d.fips] = localRes.Ilocal[i]; });
     renderChoropleth('spatial-map-autocorr', fipsCluster, { categorical: CLUSTER_COLORS, title: 'LISA clusters' });
     drawMoranScatter(
       document.getElementById('spatial-chart-autocorr-moran'),
@@ -1209,21 +1298,22 @@
     localRes.cluster.forEach((c) => { counts[c] = (counts[c] || 0) + 1; });
     return {
       summary: [
-        `Global Moran's I = ${globalRes.I.toFixed(4)}  (E[I] = ${globalRes.EI.toFixed(4)})`,
-        `z-score = ${globalRes.zScore.toFixed(2)}  ·  p-value = ${globalRes.pValue.toFixed(4)}`,
+        `Global Moran's I = ${fmtNum(globalRes.I, 4)}  (E[I] = ${fmtNum(globalRes.EI, 4)})`,
+        `z-score = ${fmtNum(globalRes.zScore, 2)}  ·  p-value = ${fmtNum(globalRes.pValue, 4)}`,
         `Counties analyzed: ${data.length}  ·  weights: ${weightsType}  ·  permutations: ${perm}`,
         '',
         'LISA clusters (p < 0.05):',
         `  HH (hot spots): ${counts.HH}   LL (cold spots): ${counts.LL}`,
         `  HL / LH outliers: ${counts.HL + counts.LH}   Not significant: ${counts.NS}`,
       ].join('\n'),
-      table: Object.entries(counts).map(([k, v]) => [k, v, (100 * v / data.length).toFixed(1) + '%']),
-      kpis: { I: globalRes.I.toFixed(3), p: globalRes.pValue.toFixed(4), n: data.length },
+      table: Object.entries(counts).map(([k, v]) => [k, v, fmtNum(100 * v / data.length, 1) + '%']),
+      kpis: { I: fmtNum(globalRes.I), p: fmtNum(globalRes.pValue, 4), n: data.length },
     };
   }
 
   function runRegression(rows, yCol, xCols, modelType) {
-    const data = prepareData(rows, yCol);
+    if (!xCols || !xCols.length) throw new Error('Select at least one predictor.');
+    const data = prepareRegressionData(rows, yCol, xCols);
     const y = data.map((d) => d.y);
     const W = buildWeights(data, 'queen');
     const X = buildDesignMatrix(data, xCols);
@@ -1253,20 +1343,20 @@
         'Observed vs SLX fitted'
       );
       coeffLines = slxDesign.names.map((name, i) => (
-        `  ${name.padEnd(14)}: ${slx.beta[i].toFixed(3)}`
+        `  ${name.padEnd(14)}: ${fmtNum(slx.beta[i])}`
       ));
       extra = [
         'SLX: Y = Xβ + WXθ + ε (neighbours’ covariates included)',
-        `R² = ${slx.r2.toFixed(4)}  ·  AIC = ${slx.aic.toFixed(2)}  ·  LogLik = ${slx.llf.toFixed(2)}`,
-        `Moran's I (SLX residuals) = ${slxResidMoran.I.toFixed(4)}  ·  p = ${slxResidMoran.pValue.toFixed(4)}`,
+        `R² = ${fmtNum(slx.r2, 4)}  ·  AIC = ${fmtNum(slx.aic, 2)}  ·  LogLik = ${fmtNum(slx.llf, 2)}`,
+        `Moran's I (SLX residuals) = ${fmtNum(slxResidMoran.I, 4)}  ·  p = ${fmtNum(slxResidMoran.pValue, 4)}`,
         '',
         'SLX coefficients (p-values in Python export):',
         ...coeffLines,
       ];
     } else if (modelType === 'compare') {
       compareTable = [
-        ['OLS', ols.aic.toFixed(2), ols.llf.toFixed(2), ols.r2.toFixed(4)],
-        ['SLX', slx.aic.toFixed(2), slx.llf.toFixed(2), slx.r2.toFixed(4)],
+        ['OLS', fmtNum(ols.aic, 2), fmtNum(ols.llf, 2), fmtNum(ols.r2, 4)],
+        ['SLX', fmtNum(slx.aic, 2), fmtNum(slx.llf, 2), fmtNum(slx.r2, 4)],
         ['SAR', '—', '—', 'fit in Python'],
         ['SEM', '—', '—', 'fit in Python'],
       ];
@@ -1274,11 +1364,11 @@
       extra = [
         'Model comparison (lower AIC preferred; SAR/SEM via Python export):',
         `  Best among OLS/SLX: ${best}`,
-        `  OLS  AIC=${ols.aic.toFixed(2)}  R²=${ols.r2.toFixed(4)}`,
-        `  SLX  AIC=${slx.aic.toFixed(2)}  R²=${slx.r2.toFixed(4)}`,
+        `  OLS  AIC=${fmtNum(ols.aic, 2)}  R²=${fmtNum(ols.r2, 4)}`,
+        `  SLX  AIC=${fmtNum(slx.aic, 2)}  R²=${fmtNum(slx.r2, 4)}`,
         '',
         'SLX coefficients (browser preview):',
-        ...slxDesign.names.map((name, i) => `  ${name.padEnd(14)}: ${slx.beta[i].toFixed(3)}`),
+        ...slxDesign.names.map((name, i) => `  ${name.padEnd(14)}: ${fmtNum(slx.beta[i])}`),
       ];
       active = slx.aic < ols.aic ? slx : ols;
       activeLabel = slx.aic < ols.aic ? 'SLX' : 'OLS';
@@ -1304,8 +1394,8 @@
     return {
       summary: [
         `OLS: ${yCol} ~ ${xCols.join(' + ')}`,
-        `n = ${data.length}  ·  R² = ${ols.r2.toFixed(4)}  ·  AIC = ${ols.aic.toFixed(2)}  ·  RMSE = ${ols.rmse.toFixed(4)}`,
-        `Moran's I (OLS residuals) = ${residMoran.I.toFixed(4)}  ·  p = ${residMoran.pValue.toFixed(4)}`,
+        `n = ${data.length}  ·  R² = ${fmtNum(ols.r2, 4)}  ·  AIC = ${fmtNum(ols.aic, 2)}  ·  RMSE = ${fmtNum(ols.rmse, 4)}`,
+        `Moran's I (OLS residuals) = ${fmtNum(residMoran.I, 4)}  ·  p = ${fmtNum(residMoran.pValue, 4)}`,
         residMoran.pValue < 0.05 ? '→ Residual spatial autocorrelation detected; try SLX, SAR, or SEM.' : '',
         extra,
         modelType !== 'ols_diag' && modelType !== 'slx' && modelType !== 'compare'
@@ -1313,13 +1403,13 @@
       ].filter(Boolean).join('\n'),
       compareTable,
       coeffTable: modelType === 'slx' || modelType === 'compare'
-        ? slxDesign.names.map((name, i) => [name, slx.beta[i].toFixed(3)])
+        ? slxDesign.names.map((name, i) => [name, fmtNum(slx.beta[i])])
         : null,
       kpis: {
-        r2: active.r2.toFixed(3),
-        moran: (modelType === 'slx' ? slxResidMoran : residMoran).I.toFixed(3),
+        r2: fmtNum(active.r2),
+        moran: fmtNum((modelType === 'slx' ? slxResidMoran : residMoran).I),
         n: data.length,
-        aic: active.aic.toFixed(1),
+        aic: fmtNum(active.aic, 1),
       },
     };
   }
@@ -1347,16 +1437,22 @@
     renderChoropleth('spatial-map-bayes-raw', fipsRaw, { diverging: true, title: 'Raw SMR' });
     renderChoropleth('spatial-map-bayes-smooth', fipsSmooth, { diverging: true, title: 'Smoothed rate' });
     drawHist(document.getElementById('spatial-chart-bayes-shrink'), eb.shrink, 'Shrinkage factor');
+    const smrMean = meanOf(smr) ?? 0;
+    const smrSd = smr.length
+      ? Math.sqrt(smr.reduce((s, v) => s + (v - smrMean) ** 2, 0) / smr.length)
+      : null;
+    const smoothMean = meanOf(smoothed);
+    const shrinkPct = 100 * meanOf(eb.shrink);
     return {
       summary: [
         `Disease mapping · ${rateCol}${popCol ? ` · pop=${popCol}` : ''}`,
         `Smoothing: ${method === 'bym' ? 'BYM approximate' : 'Empirical Bayes (gamma-Poisson)'}`,
         `n = ${data.length} counties`,
-        `Raw SMR/rate  mean=${(smr.reduce((s, v) => s + v, 0) / smr.length).toFixed(3)}  SD=${Math.sqrt(smr.reduce((s, v) => s + (v - rateMean) ** 2, 0) / smr.length).toFixed(3)}`,
-        `Smoothed     mean=${(smoothed.reduce((s, v) => s + v, 0) / smoothed.length).toFixed(3)}`,
-        `Mean shrinkage: ${(100 * eb.shrink.reduce((s, v) => s + v, 0) / eb.shrink.length).toFixed(1)}%`,
+        `Raw SMR/rate  mean=${fmtNum(smrMean)}  SD=${fmtNum(smrSd)}`,
+        `Smoothed     mean=${fmtNum(smoothMean)}`,
+        `Mean shrinkage: ${fmtNum(shrinkPct, 1)}%`,
       ].join('\n'),
-      kpis: { shrink: (100 * eb.shrink.reduce((s, v) => s + v, 0) / eb.shrink.length).toFixed(1) + '%', n: data.length },
+      kpis: { shrink: fmtNum(shrinkPct, 1) + '%', n: data.length },
     };
   }
 
@@ -1390,13 +1486,13 @@
     return {
       summary: [
         `Kulldorff spatial scan (Poisson, circular windows)`,
-        `Best cluster LLR = ${scan.llr.toFixed(3)}  ·  p-value = ${scan.pValue.toFixed(4)}`,
-        `Cluster size: ${scan.inside.length} counties  ·  radius ≈ ${(scan.radius || 0).toFixed(0)} km`,
+        `Best cluster LLR = ${fmtNum(scan.llr)}  ·  p-value = ${fmtNum(scan.pValue, 4)}`,
+        `Cluster size: ${scan.inside.length} counties  ·  radius ≈ ${fmtNum(scan.radius || 0, 0)} km`,
         `Permutations: ${perm}`,
         '',
         `LISA High-High counties: ${nLISA} (compare with scan map)`,
       ].join('\n'),
-      kpis: { llr: scan.llr.toFixed(2), p: scan.pValue.toFixed(4), n: scan.inside.length },
+      kpis: { llr: fmtNum(scan.llr, 2), p: fmtNum(scan.pValue, 4), n: scan.inside.length },
     };
   }
 
