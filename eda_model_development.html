@@ -698,6 +698,25 @@ details.spatial-python-fold summary {
           </div>
         </div>
 
+        <div class="pipe-step" id="step-impute">
+          <div class="pipe-step-head">
+            <h3><span class="pipe-step-num">Step 5</span> · Missing values</h3>
+            <span class="note" style="margin:0">How to handle gaps in feature (X) columns after the county join.</span>
+          </div>
+          <div class="field" style="max-width:480px;margin:0">
+            <label for="pipeline-impute">Feature imputation</label>
+            <select id="pipeline-impute" aria-describedby="pipeline-impute-hint">
+              <option value="auto" selected>Auto — complete rows when ≥35% of counties (or ≥50 rows)</option>
+              <option value="drop">Drop — listwise deletion (complete cases only)</option>
+              <option value="mean">Impute — column mean</option>
+              <option value="median">Impute — column median</option>
+              <option value="zero">Impute — 0</option>
+              <option value="keep">Keep missing — leave nulls in model_frame</option>
+            </select>
+            <p class="note" id="pipeline-impute-hint">Outcome (Y) must be present for each row. Imputation applies to selected features only — not Y, FIPS, or geography fields.</p>
+          </div>
+        </div>
+
         <div class="btnrow">
           <button type="button" class="btn" id="btn-build-frame">Build dataframe</button>
           <button type="button" class="btn ghost" id="btn-download-frame">Download CSV</button>
@@ -706,7 +725,7 @@ details.spatial-python-fold summary {
           <button type="button" class="btn ghost" id="btn-frame-to-ml">Open in Machine Learning</button>
           <button type="button" class="btn ghost" id="btn-load-chr">Preload CHR (selected year(s))</button>
         </div>
-        <p class="note" id="pipeline-frame-status">Complete steps 1–4, then Build dataframe.</p>
+        <p class="note" id="pipeline-frame-status">Complete steps 1–5, then Build dataframe.</p>
         <p class="note" id="load-status"></p>
       </div>
 
@@ -719,6 +738,7 @@ details.spatial-python-fold summary {
           <div class="kpi"><div class="num" id="pk-n">—</div><div class="lab">Rows</div></div>
           <div class="kpi"><div class="num" id="pk-y">—</div><div class="lab">Outcome</div></div>
           <div class="kpi"><div class="num" id="pk-x">—</div><div class="lab">Features</div></div>
+          <div class="kpi"><div class="num" id="pk-missing">—</div><div class="lab">Missing (X)</div></div>
           <div class="kpi"><div class="num" id="pk-scope">—</div><div class="lab">Scope</div></div>
         </div>
         <div class="table-wrap" style="margin-top:10px">
@@ -4083,6 +4103,47 @@ plt.show()`;
     return !!document.getElementById('pipeline-centroids')?.checked;
   }
 
+  const PIPELINE_IMPUTE_LABELS = {
+    auto: 'auto (complete rows when enough)',
+    'auto-complete': 'auto — complete cases',
+    'auto-partial': 'auto — kept partial rows',
+    drop: 'listwise deletion',
+    mean: 'column mean',
+    median: 'column median',
+    zero: 'zero fill',
+    keep: 'missing kept',
+  };
+
+  function pipelineImputeMethod() {
+    return document.getElementById('pipeline-impute')?.value || 'auto';
+  }
+
+  function formatImputeSummary(stats) {
+    if (!stats) return '';
+    const label = PIPELINE_IMPUTE_LABELS[stats.method] || stats.method;
+    const parts = [label];
+    if (stats.missingCellsBefore > 0) {
+      parts.push(`${stats.missingCellsBefore.toLocaleString()} missing cells before`);
+    }
+    if (stats.cellsImputed > 0) {
+      parts.push(`${stats.cellsImputed.toLocaleString()} imputed`);
+    }
+    if (stats.rowsDropped > 0) {
+      parts.push(`${stats.rowsDropped.toLocaleString()} rows dropped`);
+    }
+    return parts.join(' · ');
+  }
+
+  function initPipelineImputeControl() {
+    const sel = document.getElementById('pipeline-impute');
+    if (!sel) return;
+    const saved = localStorage.getItem('eda-pipeline-impute');
+    if (saved && [...sel.options].some((o) => o.value === saved)) sel.value = saved;
+    sel.addEventListener('change', () => {
+      localStorage.setItem('eda-pipeline-impute', sel.value);
+    });
+  }
+
   function formatPipelineYears(years, yearAggregate) {
     if (!years || !years.length) return '—';
     const span = years.length === 1
@@ -4203,11 +4264,21 @@ plt.show()`;
     document.getElementById('pk-n').textContent = meta.n.toLocaleString();
     document.getElementById('pk-y').textContent = meta.yCol;
     document.getElementById('pk-x').textContent = String(meta.featureCols.length);
+    const missingEl = document.getElementById('pk-missing');
+    if (missingEl) {
+      const imp = meta.impute;
+      if (!imp) missingEl.textContent = '—';
+      else if (imp.cellsImputed > 0) missingEl.textContent = imp.cellsImputed.toLocaleString();
+      else if (imp.missingCellsBefore > 0 && imp.method === 'keep') missingEl.textContent = imp.missingCellsBefore.toLocaleString();
+      else if (imp.rowsDropped > 0) missingEl.textContent = `−${imp.rowsDropped.toLocaleString()}`;
+      else missingEl.textContent = '0';
+    }
     document.getElementById('pk-scope').textContent = `${formatPipelineYears(meta.years || [meta.year], meta.yearAggregate)} · ${formatPipelineState(meta.state)}`;
     document.getElementById('pipeline-frame-meta').textContent =
       `${meta.n.toLocaleString()} rows · Y=${meta.yCol} · ${meta.featureCols.length} features`
       + `${meta.includeCentroids ? ' · centroids' : ''}`
       + ` · year column: ${meta.yearAggregate === 'mean' ? 'mean (aggregated)' : 'panel'}`
+      + (meta.impute ? ` · missing: ${formatImputeSummary(meta.impute)}` : '')
       + ` · table model_frame`;
   }
 
@@ -4235,13 +4306,15 @@ plt.show()`;
         yearAggregate: getPipelineYearAggregate(),
         stateAbbr: document.getElementById('pipeline-state').value,
         includeCentroids: pipelineCentroidsEnabled(),
+        impute: pipelineImputeMethod(),
         outcomeId,
         featureIds,
       });
       lastFrameMeta = meta;
       previewFrame(meta.rows, meta);
       const yearLbl = formatPipelineYears(meta.years, meta.yearAggregate);
-      status.textContent = `Built model_frame — ${meta.n.toLocaleString()} rows (${yearLbl}), Y=${meta.yCol}, ${meta.featureCols.length} features.`;
+      const imputeNote = meta.impute ? ` · ${formatImputeSummary(meta.impute)}` : '';
+      status.textContent = `Built model_frame — ${meta.n.toLocaleString()} rows (${yearLbl}), Y=${meta.yCol}, ${meta.featureCols.length} features${imputeNote}.`;
       status.className = 'note';
       status.style.color = '';
       if (pageStatus) {
@@ -4955,6 +5028,7 @@ plt.show()`;
 
   document.addEventListener('DOMContentLoaded', () => {
     applyVizPanelSize();
+    initPipelineImputeControl();
     initEdaVizMapStyleControls();
     initSpatialMapStyleControls();
     const boot = async () => {

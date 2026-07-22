@@ -912,6 +912,88 @@
     return Number.isFinite(y) ? [y] : [2024];
   }
 
+  function isFiniteFeatureValue(v) {
+    return v != null && Number.isFinite(Number(v));
+  }
+
+  function countMissingFeatureCells(rows, featureCols) {
+    let n = 0;
+    rows.forEach((r) => {
+      featureCols.forEach((c) => {
+        if (!isFiniteFeatureValue(r[c])) n += 1;
+      });
+    });
+    return n;
+  }
+
+  function columnMedian(vals) {
+    if (!vals.length) return 0;
+    const sorted = vals.slice().sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+
+  function fillValueForColumn(rows, col, method) {
+    const vals = rows.map((r) => r[col]).filter(isFiniteFeatureValue).map(Number);
+    if (method === 'zero') return 0;
+    if (!vals.length) return 0;
+    if (method === 'median') return columnMedian(vals);
+    return vals.reduce((s, v) => s + v, 0) / vals.length;
+  }
+
+  function applyFeatureImputation(rows, featureCols, method) {
+    const imputeMethod = method || 'auto';
+    const stats = {
+      method: imputeMethod,
+      rowsBefore: rows.length,
+      rowsAfter: rows.length,
+      missingCellsBefore: countMissingFeatureCells(rows, featureCols),
+      cellsImputed: 0,
+      rowsDropped: 0,
+    };
+
+    if (imputeMethod === 'drop') {
+      const kept = rows.filter((r) => featureCols.every((c) => isFiniteFeatureValue(r[c])));
+      stats.rowsAfter = kept.length;
+      stats.rowsDropped = rows.length - kept.length;
+      return { rows: kept, stats };
+    }
+
+    if (imputeMethod === 'auto') {
+      const complete = rows.filter((r) => featureCols.every((c) => isFiniteFeatureValue(r[c])));
+      const useComplete = complete.length >= Math.max(50, rows.length * 0.35);
+      const kept = useComplete ? complete : rows;
+      stats.method = useComplete ? 'auto-complete' : 'auto-partial';
+      stats.rowsAfter = kept.length;
+      stats.rowsDropped = rows.length - kept.length;
+      return { rows: kept, stats };
+    }
+
+    if (imputeMethod === 'keep') {
+      return { rows, stats };
+    }
+
+    if (imputeMethod === 'mean' || imputeMethod === 'median' || imputeMethod === 'zero') {
+      const fills = {};
+      featureCols.forEach((col) => {
+        fills[col] = fillValueForColumn(rows, col, imputeMethod);
+      });
+      const out = rows.map((r) => {
+        const row = { ...r };
+        featureCols.forEach((col) => {
+          if (!isFiniteFeatureValue(row[col])) {
+            row[col] = fills[col];
+            stats.cellsImputed += 1;
+          }
+        });
+        return row;
+      });
+      return { rows: out, stats };
+    }
+
+    return { rows, stats };
+  }
+
   /**
    * Build a wide county modeling dataframe.
    * opts: { year|years, stateAbbr|'ALL'|'CONUS', outcomeId, featureIds, includeCentroids }
@@ -1264,14 +1346,17 @@
       });
     });
 
-    // Keep rows that have Y; drop if all features missing
+    // Keep rows that have Y; handle missing feature values per imputation option
     let rows = [...byKey.values()].filter((r) => r[yCol] != null && Number.isFinite(r[yCol]));
     if (includeCentroids) attachCountyCentroids(rows);
     rows.sort((a, b) => String(a.fips).localeCompare(String(b.fips)) || (a.year - b.year));
 
-    // Prefer complete cases for modeling convenience
-    const complete = rows.filter((r) => featureCols.every((c) => r[c] != null && Number.isFinite(r[c])));
-    let used = complete.length >= Math.max(50, rows.length * 0.35) ? complete : rows;
+    const { rows: imputedRows, stats: imputeStats } = applyFeatureImputation(
+      rows,
+      featureCols,
+      opts.impute || 'auto',
+    );
+    let used = imputedRows;
     if (yearAggregate === 'mean') {
       used = aggregateFrameMeanByFips(used);
       used.sort((a, b) => String(a.fips).localeCompare(String(b.fips)));
@@ -1319,6 +1404,7 @@
       outcomeId,
       featureIds,
       includeCentroids,
+      impute: imputeStats,
     };
   }
 
