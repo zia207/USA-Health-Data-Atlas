@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Cancer Atlas Documentation · USA-Health Data Atlas</title>
+<style>
+:root {
+  --ink: #0b1f2a; --panel: #ffffff; --rail: #0e3a4f; --accent: #1d7a8c;
+  --paper: #e8eef1; --hair: #c5d0d6; --steel: #5a6e78; --lake: #14707e;
+  --focus: #0e4f8b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--paper); color: var(--ink); line-height: 1.55;
+}
+a { color: var(--lake); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.banner {
+  background: linear-gradient(90deg, #071821 0%, #0e3a4f 55%, #14586f 100%);
+  color: #e8f2f5; border-bottom: 4px solid var(--accent);
+}
+.banner-inner { max-width: 1180px; margin: 0 auto; padding: 18px 20px 20px; }
+.banner-top { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.banner-copy { min-width: 0; flex: 1; }
+.banner-aside { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.banner-logo {
+  display: block; width: clamp(72px, 12vw, 110px); height: auto;
+  background: #fff; border-radius: 10px; padding: 5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+.explorer-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 520px; }
+.explorer-nav a {
+  display: inline-block; background: rgba(255,255,255,.08); color: #e8f2f5;
+  text-decoration: none; border: 1px solid rgba(255,255,255,.22);
+  padding: 6px 10px; font-size: 12px; white-space: nowrap;
+}
+.explorer-nav a:hover { background: rgba(255,255,255,.14); }
+.explorer-nav a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.eyebrow {
+  font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+  letter-spacing: .14em; text-transform: uppercase; color: #8fb6bd;
+}
+h1.page-title { margin: 8px 0 6px; font-size: clamp(26px, 3.5vw, 38px); line-height: 1.08; font-weight: 750; }
+h1.page-title span { color: #7fcad4; }
+.sub { color: #b9c9ce; font-size: 14px; max-width: 820px; }
+.layout {
+  max-width: 1180px; margin: 0 auto; padding: 14px 16px 48px;
+  display: grid; grid-template-columns: 240px 1fr; gap: 18px;
+}
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.toc {
+  position: sticky; top: 12px; align-self: start;
+  background: var(--panel); border: 1px solid var(--hair); padding: 14px;
+}
+@media (max-width: 900px) { .toc { position: static; } }
+.toc h2 {
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--steel); margin: 0 0 10px; font-family: ui-monospace, Consolas, monospace;
+}
+.toc ul { list-style: none; }
+.toc li { margin-bottom: 6px; }
+.toc a { text-decoration: none; font-size: 13.5px; color: var(--rail); font-weight: 600; }
+.toc a:hover { color: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.btn {
+  display: inline-block; background: var(--rail); color: #fff; text-decoration: none;
+  padding: 8px 12px; font-size: 13px; font-weight: 650;
+}
+.btn:hover { background: var(--accent); }
+.btn.ghost { background: transparent; color: var(--rail); border: 1px solid var(--hair); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.content { min-width: 0; }
+.doc-section {
+  background: var(--panel); border: 1px solid var(--hair); padding: 20px 22px 28px;
+  margin-bottom: 16px;
+}
+.doc-section h1 { font-size: 1.45rem; margin: 0 0 .6em; line-height: 1.2; }
+.doc-section h2 {
+  font-size: 1.15rem; margin: 1.4em 0 .45em; padding-bottom: 4px;
+  border-bottom: 1px solid var(--hair); line-height: 1.25;
+}
+.doc-section h3 { font-size: 1rem; margin: 1.1em 0 .35em; }
+.doc-section p, .doc-section ul, .doc-section ol { margin: .55em 0; }
+.doc-section li { margin: .2em 0 .2em 1.2em; }
+.doc-section table {
+  width: 100%; border-collapse: collapse; font-size: 13px; margin: .8em 0;
+}
+.doc-section th, .doc-section td {
+  border: 1px solid var(--hair); padding: 7px 9px; text-align: left; vertical-align: top;
+}
+.doc-section th { background: #0e3a4f; color: #fff; font-weight: 600; }
+.doc-section tr:nth-child(even) td { background: #f4f8f8; }
+.doc-section code {
+  font-family: ui-monospace, Consolas, monospace; font-size: .9em;
+  background: #eef5f7; padding: 1px 4px;
+}
+.doc-section pre {
+  background: #14262e; color: #b9e0e6; padding: 12px 14px; overflow: auto;
+  font-size: 12px; line-height: 1.45; margin: .8em 0;
+}
+.doc-section pre code { background: transparent; padding: 0; color: inherit; }
+.doc-section hr { border: none; border-top: 1px solid var(--hair); margin: 1.5em 0; }
+.doc-section em { color: #33474f; }
+.footer {
+  max-width: 1180px; margin: 0 auto; padding: 0 16px 36px;
+  font-size: 12px; color: var(--steel);
+}
+</style>
+</head>
+<body>
+  <header class="banner">
+    <div class="banner-inner">
+      <div class="banner-top">
+        <div class="banner-copy">
+          <div class="eyebrow">USA-Health Data Atlas · State Cancer Profiles</div>
+          <h1 class="page-title">Cancer Atlas <span>Documentation</span></h1>
+          <p class="sub">
+            Combined dataset documentation for county-level cancer incidence and mortality
+            in the contiguous United States — incidence time series, observed 5-year pooled
+            incidence, and reconstructed mortality series.
+          </p>
+        </div>
+        <div class="banner-aside">
+          <img class="banner-logo" src="upatta_logo.png" alt="Upatta Data Analytics" width="110" height="110"/>
+          <nav class="explorer-nav" aria-label="Atlas navigation">
+            <a href="index.html">Home</a>
+            <a href="usa_cancer_atlas.html">USA Cancer Atlas</a>
+            <a class="active" href="cancer_documentation.html" aria-current="page">Documentation</a>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="toc" aria-label="Table of contents">
+      <h2>On this page</h2>
+      <ul>
+        <li><a href="#incidence-timeseries">Incidence time series (2020–2025)</a></li>
+        <li><a href="#incidence-5yr">Incidence 2017–2021 (pooled)</a></li>
+        <li><a href="#mortality">Mortality time series (2019–2023)</a></li>
+      </ul>
+      <div class="actions">
+        <a class="btn" href="usa_cancer_atlas.html">Open Cancer Atlas</a>
+        <a class="btn ghost" href="https://statecancerprofiles.cancer.gov" target="_blank" rel="noopener">State Cancer Profiles</a>
+      </div>
+    </aside>
+    <main class="content">
+      <article class="doc-section" id="incidence-timeseries"><h1>CONUS County-Level Cancer Incidence — Dataset Documentation</h1>
+<p>A tidy, long-format time series of <strong>annual county-level cancer incidence</strong> for the
+<strong>contiguous United States (48 states + DC)</strong>, covering <strong>2020–2025</strong> across <strong>15
+cancer sites</strong>. The dataset is produced by <code>cancer_incidence_pipeline.py</code>, which
+ships real connectors to the authoritative sources and a reproducible synthetic
+generator that fills the target schema for every county × year × site.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Geographic scope</td>
+<td>Contiguous US — 3,108 counties, 48 states + DC (excludes AK, HI, territories)</td>
+</tr>
+<tr>
+<td>Years</td>
+<td>2020, 2021, 2022, 2023, 2024, 2025</td>
+</tr>
+<tr>
+<td>Cancer sites</td>
+<td>15 (see <em>Cancer sites covered</em>)</td>
+</tr>
+<tr>
+<td>Grain</td>
+<td>one row per county × year × cancer_site × sex × source</td>
+</tr>
+<tr>
+<td>Rows</td>
+<td>279,720</td>
+</tr>
+<tr>
+<td>Files</td>
+<td><code>conus_cancer_incidence_timeseries.parquet</code> (3.4 MB), <code>.csv</code> (67 MB)</td>
+</tr>
+<tr>
+<td>Denominator reference</td>
+<td><code>conus_counties.csv</code> (FIPS, name, 2018 population)</td>
+</tr>
+</tbody>
+</table>
+<p>Parquet is the recommended format: it preserves the nullable <code>cases</code> and
+<code>suppressed</code> types that CSV silently coerces.</p>
+<hr />
+<h2>Read this first — what &ldquo;annual county incidence&rdquo; is and is not</h2>
+<p>This is the single most important thing to understand before using the data.</p>
+<p>Authoritative US county cancer incidence comes from <strong>State Cancer Profiles</strong>
+(NCI, built on CDC&rsquo;s National Program of Cancer Registries and NCI&rsquo;s SEER). That
+source does <strong>not</strong> publish a single-year county series. Three structural facts
+make a genuine annual 2020–2025 county panel impossible to obtain directly:</p>
+<ol>
+<li><strong>County data is released as a 5-year pooled rate</strong>, not annually. Single-year
+   county counts are too small and statistically unstable, so the published unit
+   is the <em>latest 5-year average</em> (currently 2017–2021).</li>
+<li><strong>Registry data lags roughly 2–4 years.</strong> As of mid-2026 the newest national
+   figures reach about 2022; <strong>2023–2025 county incidence has not been released.</strong></li>
+<li><strong>Small counts are suppressed.</strong> Counts under 16 are withheld, which censors
+   most counties for most sites in any single year.</li>
+</ol>
+<p>Because of this, the annual values in this dataset are a <strong>modeled construct</strong>,
+not observed registry counts. Every row is tagged so this is never ambiguous:</p>
+<ul>
+<li>The <code>source</code> value ends in <code>(SYNTHETIC_DEMO)</code>.</li>
+<li>The <code>data_status</code> column records real-world availability per year
+  (<code>released</code>, <code>preliminary</code>, or <code>projected_not_released</code>).</li>
+</ul>
+<p>The pipeline&rsquo;s live path (<code>build_timeseries(use_synthetic=False)</code>) returns the
+<strong>real</strong> 5-year-pooled county rates from State Cancer Profiles; the synthetic
+annual panel is calibrated to resemble those rates so the schema and analysis
+code can be developed against realistic structure.</p>
+<hr />
+<h2>Data sources</h2>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>What it provides</th>
+<th>Temporal unit</th>
+<th>Role here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>State Cancer Profiles</strong> (statecancerprofiles.cancer.gov)</td>
+<td>County age-adjusted incidence rate + average annual count + CI, per site/sex</td>
+<td>Latest <strong>5-year pooled</strong></td>
+<td>Real-world anchor; live connector</td>
+</tr>
+<tr>
+<td><strong>CDC WONDER — US Cancer Statistics (Incidence)</strong></td>
+<td>Annual incidence counts by site</td>
+<td>Annual (county heavily suppressed)</td>
+<td>Documented query helper</td>
+</tr>
+<tr>
+<td><strong>US Census / ACS</strong></td>
+<td>County population denominators</td>
+<td>Annual estimates</td>
+<td>Rate denominators</td>
+</tr>
+</tbody>
+</table>
+<p>State Cancer Profiles incidence is sourced from the NPCR Cancer Surveillance
+System (CDC) and the SEER Program (NCI); rates are computed in SEER*Stat and
+age-adjusted to the 2000 US standard population. The county universe and 2018
+population baseline in <code>conus_counties.csv</code> derive from Census county population
+estimates.</p>
+<hr />
+<h2>Schema / data dictionary</h2>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fips</code></td>
+<td>string(5)</td>
+<td>County FIPS, zero-padded (e.g., <code>36109</code> = Tompkins County, NY)</td>
+</tr>
+<tr>
+<td><code>county_name</code></td>
+<td>string</td>
+<td>County and state abbreviation, e.g., <code>Tompkins County, NY</code></td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>string</td>
+<td>Full state name</td>
+</tr>
+<tr>
+<td><code>state_abbr</code></td>
+<td>string</td>
+<td>Two-letter state code</td>
+</tr>
+<tr>
+<td><code>year</code></td>
+<td>Int64</td>
+<td>Calendar year, 2020–2025</td>
+</tr>
+<tr>
+<td><code>cancer_site</code></td>
+<td>string</td>
+<td>Cancer site label (see below)</td>
+</tr>
+<tr>
+<td><code>sex</code></td>
+<td>string</td>
+<td><code>Both sexes</code>, <code>Female</code>, or <code>Male</code> (matched to the site)</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>string</td>
+<td>Provider tag; <code>(SYNTHETIC_DEMO)</code> marks modeled rows</td>
+</tr>
+<tr>
+<td><code>cases</code></td>
+<td>float</td>
+<td>New cases; <code>NaN</code> when suppressed</td>
+</tr>
+<tr>
+<td><code>population</code></td>
+<td>int</td>
+<td>Denominator population (sex-specific for sex-specific sites)</td>
+</tr>
+<tr>
+<td><code>crude_rate_per_100k</code></td>
+<td>float</td>
+<td><code>cases / population × 100,000</code></td>
+</tr>
+<tr>
+<td><code>age_adjusted_rate_per_100k</code></td>
+<td>float</td>
+<td>Age-standardized rate (2000 US standard); <code>NaN</code> when suppressed</td>
+</tr>
+<tr>
+<td><code>pct_of_population</code></td>
+<td>float</td>
+<td><code>cases / population × 100</code></td>
+</tr>
+<tr>
+<td><code>suppressed</code></td>
+<td>bool</td>
+<td><code>True</code> when the count is under 16 (registry standard)</td>
+</tr>
+<tr>
+<td><code>data_status</code></td>
+<td>string</td>
+<td><code>released</code> / <code>preliminary</code> / <code>projected_not_released</code></td>
+</tr>
+<tr>
+<td><code>notes</code></td>
+<td>string</td>
+<td>Provenance and caveat string</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>age_adjusted_rate_per_100k</code> is the standard epidemiological comparison
+metric (it removes differences in age structure between counties). <code>crude_rate</code>
+and <code>pct_of_population</code> are raw counts over population and will differ from the
+age-adjusted rate, especially in counties with unusual age distributions.</p>
+<hr />
+<h2>Cancer sites covered</h2>
+<table>
+<thead>
+<tr>
+<th>Site</th>
+<th>Sex</th>
+<th>Approx. US age-adjusted rate (/100k)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>All Cancer Sites</td>
+<td>Both sexes</td>
+<td>442</td>
+</tr>
+<tr>
+<td>Female Breast</td>
+<td>Female</td>
+<td>130</td>
+</tr>
+<tr>
+<td>Prostate</td>
+<td>Male</td>
+<td>112</td>
+</tr>
+<tr>
+<td>Lung &amp; Bronchus</td>
+<td>Both sexes</td>
+<td>54</td>
+</tr>
+<tr>
+<td>Colon &amp; Rectum</td>
+<td>Both sexes</td>
+<td>37</td>
+</tr>
+<tr>
+<td>Uterus (Corpus)</td>
+<td>Female</td>
+<td>28</td>
+</tr>
+<tr>
+<td>Melanoma of the Skin</td>
+<td>Both sexes</td>
+<td>22</td>
+</tr>
+<tr>
+<td>Bladder</td>
+<td>Both sexes</td>
+<td>19</td>
+</tr>
+<tr>
+<td>Non-Hodgkin Lymphoma</td>
+<td>Both sexes</td>
+<td>19</td>
+</tr>
+<tr>
+<td>Kidney &amp; Renal Pelvis</td>
+<td>Both sexes</td>
+<td>17</td>
+</tr>
+<tr>
+<td>Leukemia</td>
+<td>Both sexes</td>
+<td>14</td>
+</tr>
+<tr>
+<td>Pancreas</td>
+<td>Both sexes</td>
+<td>13</td>
+</tr>
+<tr>
+<td>Thyroid</td>
+<td>Both sexes</td>
+<td>13</td>
+</tr>
+<tr>
+<td>Ovary</td>
+<td>Female</td>
+<td>10</td>
+</tr>
+<tr>
+<td>Liver &amp; Bile Duct</td>
+<td>Both sexes</td>
+<td>9</td>
+</tr>
+</tbody>
+</table>
+<p>Sex-specific sites use the corresponding sex population as the denominator
+(female ≈ 50.8%, male ≈ 49.2% of county population).</p>
+<hr />
+<h2><code>data_status</code> and suppression semantics</h2>
+<p><code>data_status</code> encodes the real reporting timeline rather than pretending all six
+years are equally available:</p>
+<table>
+<thead>
+<tr>
+<th>Year(s)</th>
+<th><code>data_status</code></th>
+<th>Real-world meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2020–2022</td>
+<td><code>released</code></td>
+<td>Published nationally (pooled/annual) by mid-2026</td>
+</tr>
+<tr>
+<td>2023</td>
+<td><code>preliminary</code></td>
+<td>Partial/early release; incomplete</td>
+</tr>
+<tr>
+<td>2024–2025</td>
+<td><code>projected_not_released</code></td>
+<td>Not yet available at county level</td>
+</tr>
+</tbody>
+</table>
+<p><code>suppressed = True</code> marks county × year × site cells with fewer than 16 cases,
+whose <code>cases</code> and <code>age_adjusted_rate_per_100k</code> are set to <code>NaN</code>. In this panel
+roughly <strong>58% of cells are suppressed</strong> — this is the genuine texture of annual
+county incidence, concentrated in small-population counties and rarer sites, not
+a defect. Any national or state roll-up that sums only unsuppressed cells will
+therefore <strong>undercount</strong>; use the released pooled rates for accurate totals.</p>
+<hr />
+<h2>Synthetic generation (methodology)</h2>
+<p>When <code>use_synthetic=True</code>, each county × site is assigned a persistent
+log-normal geographic effect, and annual expected cases are drawn as</p>
+<pre><code>λ = (base_rate / 100,000) × sex_population × county_effect
+      × site_year_drift(year) × covid_dip(year)
+cases ~ Poisson(λ)
+</code></pre>
+<p>with these deliberate, documented features:</p>
+<ul>
+<li><strong>2020 COVID dip:</strong> a ~10% reduction in 2020 with partial rebound in 2021,
+  reflecting the well-documented pandemic disruption to screening and diagnosis.</li>
+<li><strong>Site-specific secular drift:</strong> small trends (e.g., lung falling, melanoma and
+  thyroid rising) centered on 2022.</li>
+<li><strong>Registry suppression:</strong> counts of 1–15 are suppressed.</li>
+<li><strong>Reproducibility:</strong> fixed seed (<code>207</code>), so the panel regenerates identically.</li>
+</ul>
+<p>The generator is calibrated for realistic <em>shape</em>, not truth. In a validation
+run, national All-Sites unsuppressed cases rose from ~1.32M (2020, dip) to ~1.47M
+(2022), and the site ranking came out Breast &gt; Prostate &gt; Lung &gt; Colorectal &gt;
+Melanoma — matching the real US ordering.</p>
+<hr />
+<h2>Usage</h2>
+<pre><code class="language-python">import pandas as pd
+
+df = pd.read_parquet(&quot;conus_cancer_incidence_timeseries.parquet&quot;)
+
+# 1. Work only with reported (unsuppressed) cells
+reported = df[~df[&quot;suppressed&quot;]]
+
+# 2. One county's lung-cancer trend
+tompkins = df.query(&quot;fips == '36109' and cancer_site == 'Lung &amp; Bronchus'&quot;)
+
+# 3. Wide pivot: age-adjusted rate by site across years for one county
+wide = (df.query(&quot;fips == '36061'&quot;)               # New York County
+          .pivot_table(index=&quot;year&quot;, columns=&quot;cancer_site&quot;,
+                       values=&quot;age_adjusted_rate_per_100k&quot;))
+
+# 4. State-year totals for a site (unsuppressed only — see caveat above)
+state_yr = (reported.query(&quot;cancer_site == 'Colon &amp; Rectum'&quot;)
+                    .groupby([&quot;state_abbr&quot;, &quot;year&quot;])[&quot;cases&quot;].sum())
+
+# 5. Restrict to years that are realistically released
+released = df[df[&quot;data_status&quot;] == &quot;released&quot;]
+</code></pre>
+<p>To pull the <strong>real</strong> 5-year-pooled county rates instead of the synthetic panel:</p>
+<pre><code class="language-python">from cancer_incidence_pipeline import PipelineConfig, build_timeseries
+
+cfg = PipelineConfig(states=None, conus_only=True)   # or states=[&quot;NY&quot;]
+real = build_timeseries(cfg, use_synthetic=False)    # needs internet
+</code></pre>
+<p>Before trusting a live pull, verify the State Cancer Profiles cancer codes in
+<code>SCP_CANCER_CODES</code> against the site&rsquo;s &ldquo;Cancer:&rdquo; dropdown — SCP&rsquo;s internal numeric
+codes are idiosyncratic and are left flagged for confirmation.</p>
+<hr />
+<h2>Caveats and limitations</h2>
+<ul>
+<li><strong>Modeled, not observed.</strong> Annual county values are synthetic. Use the live
+  5-year pooled rates for any real analysis or reporting.</li>
+<li><strong>Do not sum suppressed-out cells for totals.</strong> ~58% suppression makes
+  unsuppressed sums systematic undercounts.</li>
+<li><strong>2023–2025 are not real.</strong> Those years carry <code>projected_not_released</code>.</li>
+<li><strong>Age-adjusted vs crude.</strong> Compare counties using the age-adjusted rate; crude
+  rate and <code>pct_of_population</code> do not account for age structure.</li>
+<li><strong>CONUS only.</strong> Alaska, Hawaii, and territories are excluded by design.</li>
+<li><strong>SCP code verification</strong> is required before a live fetch (see Usage).</li>
+</ul>
+<hr />
+<h2>File manifest</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>conus_cancer_incidence_timeseries.parquet</code></td>
+<td>The dataset (recommended format)</td>
+</tr>
+<tr>
+<td><code>conus_cancer_incidence_timeseries.csv</code></td>
+<td>Same data as CSV (larger; lossy types)</td>
+</tr>
+<tr>
+<td><code>cancer_incidence_pipeline.py</code></td>
+<td>Pipeline: live connectors + synthetic generator</td>
+</tr>
+<tr>
+<td><code>conus_counties.csv</code></td>
+<td>County FIPS, names, 2018 population (denominators)</td>
+</tr>
+<tr>
+<td><code>CONUS_Cancer_Data.md</code></td>
+<td>This document</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>References</h2>
+<ul>
+<li>National Cancer Institute &amp; CDC. <em>State Cancer Profiles.</em>
+  https://statecancerprofiles.cancer.gov</li>
+<li>CDC. <em>U.S. Cancer Statistics (USCS)</em> / CDC WONDER Cancer Incidence.
+  https://www.cdc.gov/cancer/data</li>
+<li>NCI Surveillance, Epidemiology, and End Results (SEER) Program.
+  https://seer.cancer.gov</li>
+<li>CDC National Program of Cancer Registries (NPCR).
+  https://www.cdc.gov/cancer/npcr</li>
+</ul>
+<p><em>Incidence rates are age-adjusted to the 2000 US standard population and computed
+in SEER</em>Stat by the source agencies. This documentation describes a dataset in
+which the annual county values are synthetic; treat released 5-year pooled rates
+as the authoritative figures.*</p></article>
+      <article class="doc-section" id="incidence-5yr"><h1>CONUS County-Level Cancer Incidence (2017–2021) — Dataset Documentation</h1>
+<p>A tidy, county-level dataset of <strong>observed cancer incidence</strong> for the
+<strong>contiguous United States</strong>, for the latest 5-year pooled window
+(<strong>2017–2021</strong>), across <strong>21 cancer sites</strong>. Unlike the modeled annual panels in
+this project, this file contains <strong>real, published figures</strong> from State Cancer
+Profiles (NCI + CDC&rsquo;s NPCR/SEER) — no synthesis and no reconstruction.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Geographic scope</td>
+<td>Contiguous US — 2,994 counties, 47 states (excludes AK, HI, territories; Kansas and DC absent — see coverage)</td>
+</tr>
+<tr>
+<td>Period</td>
+<td>2017–2021 (single &ldquo;Latest 5-year average&rdquo; pooled window)</td>
+</tr>
+<tr>
+<td>Cancer sites</td>
+<td>21 (see <em>Cancer sites covered</em>)</td>
+</tr>
+<tr>
+<td>Grain</td>
+<td>one row per county × cancer_site × sex</td>
+</tr>
+<tr>
+<td>Rows</td>
+<td>40,955</td>
+</tr>
+<tr>
+<td>Measure</td>
+<td>age-adjusted incidence rate per 100,000 (2000 US standard)</td>
+</tr>
+<tr>
+<td>Files</td>
+<td><code>conus_cancer_incidence_2017_2021.parquet</code> (0.6 MB), <code>.csv</code> (6.9 MB)</td>
+</tr>
+<tr>
+<td>Builder</td>
+<td><code>build_scp_5yr_incidence.py</code></td>
+</tr>
+</tbody>
+</table>
+<p>Parquet is recommended: it preserves numeric and boolean types that CSV coerces.</p>
+<hr />
+<h2>Read this first — what this dataset is</h2>
+<p>This is the <strong>authoritative, observed</strong> county incidence data. Two things to keep
+in mind about its nature:</p>
+<ol>
+<li><strong>It is a pooled snapshot, not an annual time series.</strong> State Cancer Profiles
+   publishes county incidence as a single <em>latest 5-year average</em> (currently
+   2017–2021), because single-year county counts are too small and unstable to
+   release. Every row represents the 2017–2021 pooled rate; there is no per-year
+   dimension. (For a modeled annual view, see the separate 2020–2025 synthetic
+   panel; for observed annual counts, CDC WONDER / USCS is the source, heavily
+   suppressed at county level.)</li>
+<li><strong>Suppressed cells are absent, not zero.</strong> County × site combinations with
+   fewer than 16 cases are not published and therefore do not appear as rows.
+   Rarer sites cover far fewer counties than common ones (Cervix ~736 vs All
+   Cancer Sites ~2,994). Never impute zero for a missing combination.</li>
+</ol>
+<p>Everything in the file is real: the <code>source</code> is <code>StateCancerProfiles</code>, the
+<code>data_status</code> is <code>released_5yr_pooled</code>, and rates are computed by NCI/CDC in
+SEER*Stat.</p>
+<hr />
+<h2>Data sources</h2>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Role</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>State Cancer Profiles</strong> (NCI + CDC)</td>
+<td>The data</td>
+<td>County age-adjusted incidence rate, CI, average annual case count, recent trend, and APC — latest 5-year pooled (2017–2021)</td>
+</tr>
+<tr>
+<td><strong>seandavi/state-cancer-profile-scraper</strong></td>
+<td>Bulk delivery</td>
+<td>Republishes the State Cancer Profiles tables monthly as GitHub releases (long format, all counties). Same numbers as the site&rsquo;s CSV export</td>
+</tr>
+<tr>
+<td><strong>US Census</strong></td>
+<td>Population denominators</td>
+<td>2018 county population baseline (<code>conus_counties.csv</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Incidence data combines the CDC National Program of Cancer Registries (NPCR) and
+NCI SEER. Rates are age-adjusted to the 2000 US standard population. The builder
+resolves the newest GitHub release automatically, so the pooled window advances
+as new releases are published (the current release used is dated 2026-06-01).</p>
+<hr />
+<h2>Schema / data dictionary</h2>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fips</code></td>
+<td>string(5)</td>
+<td>County FIPS, zero-padded (e.g., <code>36109</code> = Tompkins County, NY)</td>
+</tr>
+<tr>
+<td><code>county_name</code></td>
+<td>string</td>
+<td>County and state abbreviation</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>string</td>
+<td>Full state name</td>
+</tr>
+<tr>
+<td><code>state_abbr</code></td>
+<td>string</td>
+<td>Two-letter state code</td>
+</tr>
+<tr>
+<td><code>period</code></td>
+<td>string</td>
+<td><code>2017-2021</code> (the pooled window)</td>
+</tr>
+<tr>
+<td><code>cancer_site</code></td>
+<td>string</td>
+<td>Cancer site label</td>
+</tr>
+<tr>
+<td><code>sex</code></td>
+<td>string</td>
+<td><code>Both Sexes</code>, <code>Female</code>, or <code>Male</code> (matched to the site)</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>string</td>
+<td><code>StateCancerProfiles</code></td>
+</tr>
+<tr>
+<td><code>age_adjusted_rate_per_100k</code></td>
+<td>float</td>
+<td><strong>Authoritative</strong> age-adjusted incidence rate</td>
+</tr>
+<tr>
+<td><code>rate_ci_lower</code> / <code>rate_ci_upper</code></td>
+<td>float</td>
+<td>95% CI for the age-adjusted rate</td>
+</tr>
+<tr>
+<td><code>average_annual_count</code></td>
+<td>float</td>
+<td>Average annual number of new cases over 2017–2021</td>
+</tr>
+<tr>
+<td><code>population_2018</code></td>
+<td>int</td>
+<td>County population denominator</td>
+</tr>
+<tr>
+<td><code>crude_rate_per_100k</code></td>
+<td>float</td>
+<td><code>average_annual_count / population × 100,000</code></td>
+</tr>
+<tr>
+<td><code>pct_of_population</code></td>
+<td>float</td>
+<td><code>average_annual_count / population × 100</code></td>
+</tr>
+<tr>
+<td><code>recent_trend</code></td>
+<td>string</td>
+<td>Published trend label: <code>rising</code> / <code>falling</code> / <code>stable</code></td>
+</tr>
+<tr>
+<td><code>recent_5yr_trend_pct</code></td>
+<td>float</td>
+<td>Published annual percent change (%/yr)</td>
+</tr>
+<tr>
+<td><code>suppressed</code></td>
+<td>bool</td>
+<td>Present rows are unsuppressed (see coverage note)</td>
+</tr>
+<tr>
+<td><code>data_status</code></td>
+<td>string</td>
+<td><code>released_5yr_pooled</code></td>
+</tr>
+</tbody>
+</table>
+<p>The <code>age_adjusted_rate_per_100k</code> with its CI is the metric to use for comparing
+counties — it removes differences in age structure. <code>crude_rate_per_100k</code> and
+<code>pct_of_population</code> are convenience metrics against the total county population;
+for sex-specific sites they are relative to the whole population, whereas the
+age-adjusted rate is correctly sex-specific. <code>average_annual_count</code> × 5
+approximates the total cases in the window.</p>
+<hr />
+<h2>Cancer sites covered</h2>
+<p>All Cancer Sites, Lung &amp; Bronchus, Colon &amp; Rectum, Breast (Female), Prostate,
+Melanoma of the Skin, Bladder, Non-Hodgkin Lymphoma, Kidney &amp; Renal Pelvis,
+Uterus (Corpus &amp; Uterus, NOS), Leukemia, Pancreas, Thyroid, Liver &amp; Bile Duct,
+Ovary, Brain &amp; ONS, Esophagus, Stomach, Oral Cavity &amp; Pharynx, Cervix, and
+Breast (Female in situ).</p>
+<p>Sex is matched to the site: Prostate → Male; Female Breast, Breast in situ,
+Cervix, Ovary, and Uterus → Female; all other sites → Both Sexes. (The matching
+mortality file has 20 sites — it lacks the in-situ breast category.)</p>
+<hr />
+<h2>Coverage semantics</h2>
+<p>Three real coverage facts — features of the source, not defects:</p>
+<ul>
+<li><strong>Kansas is entirely absent.</strong> Kansas law restricts release of county-level
+  cancer <em>incidence</em>, so no Kansas counties appear in State Cancer Profiles
+  incidence at all. (Note the contrast with the mortality dataset, which <em>does</em>
+  include Kansas, because death-certificate data via NVSS is not restricted.)</li>
+<li><strong>DC is state-level only</strong> in State Cancer Profiles incidence and is therefore
+  absent from the county table. Together with Kansas, this yields 47 states.</li>
+<li><strong>Suppression is structural.</strong> County × site cells with fewer than 16 cases are
+  not published and are absent as rows — rarer sites cover fewer counties.
+  Absence is not zero.</li>
+</ul>
+<hr />
+<h2>Validation</h2>
+<p>The file matches known published values:</p>
+<ul>
+<li>National all-sites age-adjusted rate ≈ 448.6 with ~1.82M average annual cases,
+  matching US Cancer Statistics.</li>
+<li>Summing county <code>average_annual_count</code> for All Cancer Sites gives ~1.79M cases/yr
+  against the real ~1.8M (the small gap is suppressed/absent small counties).</li>
+<li>Spot checks — Tompkins Co., NY all-sites 462.7; Los Angeles Co. 381.3 (42,579
+  cases/yr); New York Co. lung 40.6, falling; Harris Co., TX prostate 112.8 — all
+  match State Cancer Profiles.</li>
+</ul>
+<hr />
+<h2>Usage</h2>
+<pre><code class="language-python">import pandas as pd
+
+df = pd.read_parquet(&quot;conus_cancer_incidence_2017_2021.parquet&quot;)
+
+# 1. One site across all counties, ranked
+lung = (df.query(&quot;cancer_site == 'Lung &amp; Bronchus'&quot;)
+          .sort_values(&quot;age_adjusted_rate_per_100k&quot;, ascending=False))
+
+# 2. A county's full site profile
+tompkins = df.query(&quot;fips == '36109'&quot;)[
+    [&quot;cancer_site&quot;, &quot;age_adjusted_rate_per_100k&quot;, &quot;average_annual_count&quot;,
+     &quot;recent_trend&quot;]]
+
+# 3. Wide: county × site matrix of age-adjusted rates
+wide = df.pivot_table(index=&quot;fips&quot;, columns=&quot;cancer_site&quot;,
+                      values=&quot;age_adjusted_rate_per_100k&quot;)
+
+# 4. Counties with a published rising trend for a site
+rising = df.query(&quot;cancer_site == 'Melanoma of the Skin' and &quot;
+                  &quot;recent_trend == 'rising'&quot;)
+</code></pre>
+<p>Refresh to the newest published pooled window:</p>
+<pre><code class="language-python">from build_scp_5yr_incidence import build
+df = build()          # downloads the latest release and rebuilds
+</code></pre>
+<hr />
+<h2>Caveats and limitations</h2>
+<ul>
+<li><strong>Pooled, not annual.</strong> Every row is the 2017–2021 average; there is no year
+  dimension. Do not read it as a single-year measure.</li>
+<li><strong>Absence ≠ zero.</strong> Suppressed county × site cells are missing rows.</li>
+<li><strong>Kansas and DC</strong> are not in the county incidence data.</li>
+<li><strong>Age-adjusted vs crude.</strong> Compare counties using the age-adjusted rate; crude
+  rate and <code>pct_of_population</code> do not account for age structure and use total
+  county population.</li>
+<li><strong>Static denominator.</strong> A single 2018 population is used for crude metrics; the
+  age-adjusted rate does not depend on it. (The Virginia merged pseudo-FIPS
+  <code>51917</code> uses Bedford County&rsquo;s population.)</li>
+<li><strong>CONUS only.</strong> Alaska, Hawaii, and territories are excluded by design.</li>
+</ul>
+<hr />
+<h2>File manifest</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>conus_cancer_incidence_2017_2021.parquet</code></td>
+<td>The dataset (recommended format)</td>
+</tr>
+<tr>
+<td><code>conus_cancer_incidence_2017_2021.csv</code></td>
+<td>Same data as CSV (larger)</td>
+</tr>
+<tr>
+<td><code>build_scp_5yr_incidence.py</code></td>
+<td>Builder: fetch latest release + assemble</td>
+</tr>
+<tr>
+<td><code>conus_counties.csv</code></td>
+<td>County FIPS, names, 2018 population (denominators)</td>
+</tr>
+<tr>
+<td><code>CONUS_Cancer_Incidence_2017_2021_Data.md</code></td>
+<td>This document</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>References</h2>
+<ul>
+<li>National Cancer Institute &amp; CDC. <em>State Cancer Profiles — Incidence Rates.</em>
+  https://statecancerprofiles.cancer.gov</li>
+<li>CDC. <em>U.S. Cancer Statistics (USCS).</em> https://www.cdc.gov/cancer/data</li>
+<li>NCI Surveillance, Epidemiology, and End Results (SEER) Program.
+  https://seer.cancer.gov</li>
+<li>CDC National Program of Cancer Registries (NPCR).
+  https://www.cdc.gov/cancer/npcr</li>
+<li>Davis, S. <em>state-cancer-profile-scraper</em> (bulk State Cancer Profiles data).
+  https://github.com/seandavi/state-cancer-profile-scraper</li>
+</ul>
+<p><em>Rates are age-adjusted to the 2000 US standard population and computed in
+SEER*Stat by the source agencies. Values in this dataset are real, published
+5-year pooled figures — not modeled or reconstructed.</em></p></article>
+      <article class="doc-section" id="mortality"><h1>CONUS County-Level Cancer Mortality — Dataset Documentation</h1>
+<p>A tidy, long-format <strong>annual</strong> county-level cancer <strong>mortality</strong> time series for
+the <strong>contiguous United States</strong>, covering <strong>2019–2023</strong> across <strong>20 cancer
+sites</strong>. Unlike the modeled incidence panel, this dataset is <strong>anchored to real
+published figures</strong> from State Cancer Profiles (NCI + CDC); the annual points are
+reconstructed from two real quantities per county × site — the published 5-year
+pooled rate and the published annual trend.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Geographic scope</td>
+<td>Contiguous US — 3,056 counties, 48 states (excludes AK, HI, territories; DC is state-level only)</td>
+</tr>
+<tr>
+<td>Years</td>
+<td>2019, 2020, 2021, 2022, 2023</td>
+</tr>
+<tr>
+<td>Cancer sites</td>
+<td>20 (see <em>Cancer sites covered</em>)</td>
+</tr>
+<tr>
+<td>Grain</td>
+<td>one row per county × year × cancer_site × sex</td>
+</tr>
+<tr>
+<td>Rows</td>
+<td>125,060</td>
+</tr>
+<tr>
+<td>Measure</td>
+<td>age-adjusted mortality rate per 100,000 (2000 US standard)</td>
+</tr>
+<tr>
+<td>Files</td>
+<td><code>conus_cancer_mortality_timeseries_2019_2023.parquet</code> (1.3 MB), <code>.csv</code> (38.7 MB)</td>
+</tr>
+<tr>
+<td>Builder</td>
+<td><code>build_scp_mortality_timeseries.py</code></td>
+</tr>
+</tbody>
+</table>
+<p>Parquet is recommended: it preserves the numeric and boolean types that CSV
+coerces.</p>
+<hr />
+<h2>Read this first — what the annual series is, and how it is derived</h2>
+<p>This is the single most important thing to understand before using the data.</p>
+<p>State Cancer Profiles publishes county cancer mortality as a <strong>single &ldquo;Latest
+5-year average&rdquo;</strong> (currently <strong>2019–2023</strong>) age-adjusted rate, together with a
+<strong>published recent annual percent change (APC)</strong> estimated by joinpoint
+regression. There is no observed single-year county mortality series in the bulk
+data; that exists only in <strong>CDC WONDER</strong> (Underlying Cause of Death, ICD-10
+C00–C97, annual, county, counts &lt;10 suppressed).</p>
+<p>The annual series here is therefore a <strong>transparent reconstruction</strong> from two
+real published quantities per county × site:</p>
+<pre><code>rate(year)   = pooled_rate         × (1 + APC/100) ** (year − 2021)
+deaths(year) = average_annual_count × (1 + APC/100) ** (year − 2021)
+</code></pre>
+<p>where 2021 is the midpoint of the 2019–2023 window. Both the <strong>level</strong>
+(<code>pooled_rate_2019_2023</code>) and the <strong>trend</strong> (<code>recent_5yr_trend_pct</code>) are real and
+retained as columns, so the reconstruction is fully auditable. The series
+geometrically centers on the published pooled rate at 2021.</p>
+<p>Consequences to keep in mind:</p>
+<ul>
+<li><strong>These are reconstructed annual values, not observed death counts.</strong> The
+  strength of the reconstruction is that its level and trend are both real; its
+  limitation is that it assumes a smooth constant-APC path within the window and
+  cannot capture year-specific shocks (e.g., a single anomalous year).</li>
+<li><strong>82%</strong> of county × site cells carry a real published APC and are trended
+  (<code>data_status = reconstructed_trended</code>). The remaining <strong>~18%</strong> have no
+  published trend and are held flat at the pooled rate
+  (<code>data_status = reconstructed_flat</code>).</li>
+<li>For genuinely <strong>observed</strong> annual county mortality, use CDC WONDER. The builder
+  includes a documented <code>cdc_wonder_county_cancer_mortality()</code> helper describing
+  that request.</li>
+</ul>
+<hr />
+<h2>Data sources</h2>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Role</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>State Cancer Profiles</strong> (NCI + CDC)</td>
+<td>Real level + trend anchor</td>
+<td>County age-adjusted mortality rate, CI, average annual death count, recent trend, and APC — latest 5-year pooled (2019–2023)</td>
+</tr>
+<tr>
+<td><strong>seandavi/state-cancer-profile-scraper</strong></td>
+<td>Bulk delivery</td>
+<td>Republishes the State Cancer Profiles tables monthly as GitHub releases (long format, all counties). Same numbers as the site&rsquo;s CSV export</td>
+</tr>
+<tr>
+<td><strong>CDC WONDER</strong> (Underlying Cause of Death)</td>
+<td>Observed annual alternative</td>
+<td>ICD-10 C00–C97 by county/year; counts &lt;10 suppressed. Documented connector, not auto-run</td>
+</tr>
+<tr>
+<td><strong>US Census</strong></td>
+<td>Population denominators</td>
+<td>2018 county population baseline (<code>conus_counties.csv</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Mortality figures derive from death-certificate data in the National Vital
+Statistics System (NVSS). Rates are age-adjusted to the 2000 US standard
+population and computed in SEER*Stat by the source agencies. The builder
+resolves the newest GitHub release automatically, so the pooled window advances
+as new releases are published.</p>
+<hr />
+<h2>Schema / data dictionary</h2>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fips</code></td>
+<td>string(5)</td>
+<td>County FIPS, zero-padded</td>
+</tr>
+<tr>
+<td><code>county_name</code></td>
+<td>string</td>
+<td>County and state abbreviation</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>string</td>
+<td>Full state name</td>
+</tr>
+<tr>
+<td><code>state_abbr</code></td>
+<td>string</td>
+<td>Two-letter state code</td>
+</tr>
+<tr>
+<td><code>year</code></td>
+<td>int</td>
+<td>2019–2023</td>
+</tr>
+<tr>
+<td><code>cancer_site</code></td>
+<td>string</td>
+<td>Cancer site label</td>
+</tr>
+<tr>
+<td><code>sex</code></td>
+<td>string</td>
+<td><code>Both Sexes</code>, <code>Female</code>, or <code>Male</code> (matched to the site)</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>string</td>
+<td><code>StateCancerProfiles (pooled rate + APC reconstruction)</code></td>
+</tr>
+<tr>
+<td><code>age_adjusted_rate_per_100k</code></td>
+<td>float</td>
+<td><strong>Reconstructed</strong> age-adjusted mortality rate for that year</td>
+</tr>
+<tr>
+<td><code>pooled_rate_2019_2023</code></td>
+<td>float</td>
+<td><strong>Real</strong> published 5-year pooled age-adjusted rate (the level)</td>
+</tr>
+<tr>
+<td><code>rate_ci_lower</code> / <code>rate_ci_upper</code></td>
+<td>float</td>
+<td>Real 95% CI for the pooled rate</td>
+</tr>
+<tr>
+<td><code>recent_trend</code></td>
+<td>string</td>
+<td>Real published trend label: <code>rising</code> / <code>falling</code> / <code>stable</code></td>
+</tr>
+<tr>
+<td><code>recent_5yr_trend_pct</code></td>
+<td>float</td>
+<td><strong>Real</strong> published APC (%/yr) used in the reconstruction</td>
+</tr>
+<tr>
+<td><code>modeled_deaths</code></td>
+<td>float</td>
+<td>Reconstructed annual death count</td>
+</tr>
+<tr>
+<td><code>average_annual_count</code></td>
+<td>float</td>
+<td>Real average annual deaths over 2019–2023</td>
+</tr>
+<tr>
+<td><code>population_2018</code></td>
+<td>int</td>
+<td>County population denominator</td>
+</tr>
+<tr>
+<td><code>crude_rate_per_100k</code></td>
+<td>float</td>
+<td><code>modeled_deaths / population × 100,000</code></td>
+</tr>
+<tr>
+<td><code>pct_of_population</code></td>
+<td>float</td>
+<td><code>modeled_deaths / population × 100</code></td>
+</tr>
+<tr>
+<td><code>suppressed</code></td>
+<td>bool</td>
+<td>Present rows are unsuppressed (see coverage note)</td>
+</tr>
+<tr>
+<td><code>data_status</code></td>
+<td>string</td>
+<td><code>reconstructed_trended</code> or <code>reconstructed_flat</code></td>
+</tr>
+<tr>
+<td><code>notes</code></td>
+<td>string</td>
+<td>Provenance/caveat string</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>age_adjusted_rate_per_100k</code> (reconstructed) and <code>pooled_rate_2019_2023</code>
+(real) are the primary analytic fields. <code>crude_rate_per_100k</code> and
+<code>pct_of_population</code> are convenience metrics against the total county population;
+for sex-specific sites they are relative to the whole population, whereas the
+age-adjusted rate is correctly sex-specific.</p>
+<hr />
+<h2>Cancer sites covered</h2>
+<p>All Cancer Sites, Bladder, Brain &amp; ONS, Breast (Female), Cervix, Colon &amp; Rectum,
+Esophagus, Kidney &amp; Renal Pelvis, Leukemia, Liver &amp; Bile Duct, Lung &amp; Bronchus,
+Melanoma of the Skin, Non-Hodgkin Lymphoma, Oral Cavity &amp; Pharynx, Ovary,
+Pancreas, Prostate, Stomach, Thyroid, and Uterus (Corpus &amp; Uterus, NOS).</p>
+<p>Sex is matched to the site: Prostate → Male; Female Breast, Cervix, Ovary, and
+Uterus → Female; all other sites → Both Sexes. (In-situ breast and childhood
+categories exist for incidence but not mortality, so the mortality file has 20
+sites rather than 21.)</p>
+<hr />
+<h2><code>data_status</code> and coverage semantics</h2>
+<table>
+<thead>
+<tr>
+<th><code>data_status</code></th>
+<th>Share</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reconstructed_trended</code></td>
+<td>~82%</td>
+<td>Real published APC applied across years</td>
+</tr>
+<tr>
+<td><code>reconstructed_flat</code></td>
+<td>~18%</td>
+<td>No published APC; rate held at the pooled level for all years</td>
+</tr>
+</tbody>
+</table>
+<p>Three real coverage facts — features of the source, not defects:</p>
+<ul>
+<li><strong>Kansas is present.</strong> Kansas restricts county-level <em>incidence</em> release, but
+  <em>mortality</em> comes from vital-statistics death certificates and is available —
+  so this file covers 48 states (incidence covered 47). This is a meaningful
+  difference from the incidence dataset.</li>
+<li><strong>DC is state-level only</strong> in State Cancer Profiles and is therefore absent
+  from the county table.</li>
+<li><strong>Suppression is structural.</strong> County × site cells with too few deaths are not
+  published and are simply <strong>absent as rows</strong> — rarer sites cover fewer counties.
+  Absence is not zero; do not impute zero for missing county × site combinations.</li>
+</ul>
+<hr />
+<h2>Validation</h2>
+<p>The reconstruction reproduces known national quantities:</p>
+<ul>
+<li>Population-weighted age-adjusted mortality (All Cancer Sites) runs 150.0 (2019)
+  → 145.5 (2021) → 141.2 (2023). The 2021 value matches the real published
+  national pooled rate (145.4), confirming the series is centered correctly.</li>
+<li>Reconstructed 2021 deaths (All Sites) sum to ~601,000, against the real US
+  figure of roughly 600,000 cancer deaths per year.</li>
+<li>The ~1.5%/yr national decline matches the real long-run downtrend in US cancer
+  mortality.</li>
+<li>Spot check — Tompkins County, NY, Lung &amp; Bronchus: pooled rate 26.6 with a real
+  −2.7%/yr APC reconstructs to 28.1 (2019) → 25.2 (2023).</li>
+</ul>
+<hr />
+<h2>Usage</h2>
+<pre><code class="language-python">import pandas as pd
+
+df = pd.read_parquet(&quot;conus_cancer_mortality_timeseries_2019_2023.parquet&quot;)
+
+# 1. One county's lung-cancer mortality trajectory
+tompkins = df.query(&quot;fips == '36109' and cancer_site == 'Lung &amp; Bronchus'&quot;)
+
+# 2. Counties with a real, statistically-flagged falling trend for a site
+falling = df.query(&quot;cancer_site == 'Colon &amp; Rectum' and recent_trend == 'falling'&quot;)
+
+# 3. Wide pivot: reconstructed rate by year for one county across sites
+wide = (df.query(&quot;fips == '06037'&quot;)            # Los Angeles
+          .pivot_table(index=&quot;cancer_site&quot;, columns=&quot;year&quot;,
+                       values=&quot;age_adjusted_rate_per_100k&quot;))
+
+# 4. Use only cells with a real trend (exclude held-flat reconstructions)
+trended = df[df.data_status == &quot;reconstructed_trended&quot;]
+
+# 5. Latest-year state ranking by All-Sites mortality (population-weighted)
+latest = df.query(&quot;year == 2023 and cancer_site == 'All Cancer Sites'&quot;)
+</code></pre>
+<p>Refresh to the newest published pooled window:</p>
+<pre><code class="language-python">from build_scp_mortality_timeseries import build
+df = build()          # downloads the latest release and rebuilds
+</code></pre>
+<p>For <strong>observed</strong> annual county mortality instead of the reconstruction, pull CDC
+WONDER (Underlying Cause of Death, ICD-10 C00–C97, group by County and Year); the
+builder&rsquo;s <code>cdc_wonder_county_cancer_mortality()</code> helper documents the request.</p>
+<hr />
+<h2>Caveats and limitations</h2>
+<ul>
+<li><strong>Reconstructed, not observed.</strong> Annual values assume a smooth constant-APC
+  path within 2019–2023 and cannot represent year-specific anomalies. Treat the
+  pooled rate and trend as the authoritative facts; treat the annual points as a
+  principled interpolation.</li>
+<li><strong>Held-flat cells</strong> (~18%) have no trend information and repeat the pooled rate.</li>
+<li><strong>Absence ≠ zero.</strong> Suppressed county × site cells are missing rows.</li>
+<li><strong>Age-adjusted vs crude.</strong> Compare counties using the age-adjusted rate; crude
+  rate and <code>pct_of_population</code> do not account for age structure and use total
+  county population.</li>
+<li><strong>Static denominator.</strong> A single 2018 population is used for crude metrics; the
+  age-adjusted rate does not depend on it.</li>
+<li><strong>CONUS only.</strong> Alaska, Hawaii, and territories are excluded by design.</li>
+</ul>
+<hr />
+<h2>File manifest</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>conus_cancer_mortality_timeseries_2019_2023.parquet</code></td>
+<td>The dataset (recommended format)</td>
+</tr>
+<tr>
+<td><code>conus_cancer_mortality_timeseries_2019_2023.csv</code></td>
+<td>Same data as CSV (larger)</td>
+</tr>
+<tr>
+<td><code>build_scp_mortality_timeseries.py</code></td>
+<td>Builder: fetch + reconstruct + WONDER connector</td>
+</tr>
+<tr>
+<td><code>conus_counties.csv</code></td>
+<td>County FIPS, names, 2018 population (denominators)</td>
+</tr>
+<tr>
+<td><code>CONUS_Cancer_Mortality_Data.md</code></td>
+<td>This document</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>References</h2>
+<ul>
+<li>National Cancer Institute &amp; CDC. <em>State Cancer Profiles — Death Rates.</em>
+  https://statecancerprofiles.cancer.gov</li>
+<li>CDC. <em>U.S. Cancer Statistics (USCS).</em> https://www.cdc.gov/cancer/data</li>
+<li>CDC WONDER. <em>Underlying Cause of Death.</em> https://wonder.cdc.gov</li>
+<li>CDC. <em>National Vital Statistics System (NVSS).</em> https://www.cdc.gov/nchs/nvss</li>
+<li>Davis, S. <em>state-cancer-profile-scraper</em> (bulk State Cancer Profiles data).
+  https://github.com/seandavi/state-cancer-profile-scraper</li>
+</ul>
+<p><em>Rates are age-adjusted to the 2000 US standard population and computed in
+SEER*Stat by the source agencies. In this dataset the pooled 5-year rate and the
+recent trend are real published values; the annual points are reconstructed from
+them and are not observed single-year death counts.</em></p></article>
+    </main>
+  </div>
+
+  <footer class="footer">
+  Generated from <code>data/cancer/CONUS_Cancer_Incidence_timeseries.md</code>,
+  <code>CONUS_Cancer_Incidence_2017_2021_Data.md</code>, and
+  <code>CONUS_Cancer_Mortality_Data.md</code>. Rates are age-adjusted to the 2000 U.S.
+  standard population unless noted. Always verify against
+  <a href="https://statecancerprofiles.cancer.gov" target="_blank" rel="noopener">State Cancer Profiles</a>
+  before formal reporting.
+  </footer>
+</body>
+</html>

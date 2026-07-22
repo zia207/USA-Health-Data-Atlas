@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Presidential Election Data · USA-Health Data Atlas</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/alasql@4.4.0/dist/alasql.min.js"></script>
+<script src="assets/presidential_election_data.js"></script>
+<script src="assets/geojson_counties_fips.js"></script>
+<script src="assets/geojson_us_states.js"></script>
+<script src="assets/superfund_npl_data.js"></script>
+<script src="assets/superfund_overlay.js"></script>
+<script src="assets/geochem_soil_manifest.js"></script>
+<script src="assets/geochem_soil_overlay.js"></script>
+<script src="assets/air_quality_data.js"></script>
+<script src="assets/air_quality_overlay.js"></script>
+<script src="assets/map_zoom_control.js"></script>
+<script src="assets/map_layers_control.js"></script>
+<script src="assets/map_style_controls.js"></script>
+<script src="assets/map_export.js"></script>
+<style>
+:root {
+  --ink: #0b1f2a; --panel: #ffffff; --rail: #0e3a4f; --accent: #1d7a8c;
+  --paper: #e8eef1; --hair: #c5d0d6; --steel: #5a6e78; --lake: #14707e;
+  --good: #2f7d4e; --warn: #b7431c; --focus: #0e4f8b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.5; }
+a { color: var(--lake); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.banner { background: linear-gradient(90deg, #071821 0%, #0e3a4f 55%, #14586f 100%); color: #e8f2f5; border-bottom: 4px solid var(--accent); }
+.banner-inner { max-width: 1320px; margin: 0 auto; padding: 18px 20px 20px; }
+.eyebrow { font-family: ui-monospace, Consolas, monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #8fb6bd; }
+.banner-top { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.banner-copy { min-width: 0; flex: 1; }
+.banner-aside { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.banner-logo {
+  display: block; width: clamp(72px, 12vw, 110px); height: auto;
+  background: #fff; border-radius: 10px; padding: 5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+.explorer-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 560px; }
+.explorer-nav a {
+  display: inline-block; background: rgba(255,255,255,.08); color: #e8f2f5;
+  text-decoration: none; border: 1px solid rgba(255,255,255,.22);
+  padding: 6px 10px; font-size: 12px; white-space: nowrap;
+}
+.explorer-nav a:hover { background: rgba(255,255,255,.14); }
+.explorer-nav a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 720px) {
+  .banner-aside { width: 100%; align-items: stretch; }
+  .banner-logo { align-self: flex-end; }
+  .explorer-nav { justify-content: flex-start; max-width: none; }
+}
+h1 { margin: 8px 0 6px; font-size: clamp(26px, 3.5vw, 40px); line-height: 1.08; font-weight: 750; }
+h1 span { color: #7fcad4; }
+.sub { color: #b9c9ce; font-size: 14px; max-width: 900px; }
+.dataset-tabs {
+  max-width: 1320px; margin: 0 auto; padding: 14px 16px 0;
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.dataset-tabs a {
+  font: inherit; cursor: pointer; border: 1px solid var(--hair); background: #fff;
+  color: var(--steel); padding: 10px 14px; font-size: 13px; font-weight: 650;
+  text-decoration: none; display: inline-block;
+}
+.dataset-tabs a:hover { border-color: var(--lake); color: var(--ink); }
+.dataset-tabs a.active { background: var(--rail); border-color: var(--rail); color: #fff; }
+.layout { max-width: 1320px; margin: 0 auto; padding: 14px 16px 48px; display: grid; grid-template-columns: 310px 1fr; gap: 14px; }
+@media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+.sidebar, .panel { background: var(--panel); border: 1px solid var(--hair); padding: 14px; }
+.sidebar { position: sticky; top: 10px; align-self: start; max-height: calc(100vh - 20px); overflow: auto; }
+@media (max-width: 980px) { .sidebar { position: static; max-height: none; } }
+.sidebar h2, .panel h2 { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--steel); margin: 0 0 10px; font-family: ui-monospace, Consolas, monospace; }
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--steel); margin-bottom: 4px; font-family: ui-monospace, Consolas, monospace; }
+select, textarea, button { font: inherit; color: var(--ink); }
+select, textarea { width: 100%; border: 1px solid var(--hair); background: #f7fafa; padding: 8px 9px; }
+textarea { min-height: 110px; font-family: ui-monospace, Consolas, Menlo, monospace; font-size: 12.5px; line-height: 1.45; resize: vertical; }
+.mode { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.mode label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.note { font-size: 12px; color: var(--steel); line-height: 1.45; margin-top: 8px; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.btn { background: var(--rail); color: #fff; border: none; padding: 8px 12px; cursor: pointer; font-size: 13px; font-weight: 650; }
+.btn:hover { background: var(--accent); }
+.btn.ghost { background: transparent; color: var(--steel); border: 1px dashed var(--steel); }
+.btn.ghost:hover { color: var(--ink); border-color: var(--ink); }
+.main { display: flex; flex-direction: column; gap: 12px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+@media (max-width: 780px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+.kpi { background: var(--panel); border: 1px solid var(--hair); border-top: 3px solid var(--accent); padding: 10px 12px; }
+.kpi .num { font-family: ui-monospace, Consolas, monospace; font-size: 22px; word-break: break-word; }
+.kpi .lab { font-size: 11px; color: var(--steel); text-transform: uppercase; letter-spacing: .05em; }
+#map { height: 580px; width: 100%; background: #dfe7ea; border: 1px solid var(--hair); }
+.map-legend { background: rgba(255,255,255,.96); border: 1px solid var(--hair); padding: 10px 12px; font-size: 12px; line-height: 1.45; min-width: 200px; max-width: 280px; box-shadow: 0 2px 10px rgba(20,38,46,.18); }
+.map-legend strong { display: block; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--steel); font-family: ui-monospace, Consolas, monospace; margin-bottom: 6px; }
+.legend-ramp { display: flex; height: 12px; border: 1px solid var(--hair); margin: 6px 0 4px; overflow: hidden; }
+.legend-ramp span { flex: 1; }
+.legend-labels { display: flex; justify-content: space-between; font-family: ui-monospace, Consolas, monospace; font-size: 10px; color: var(--steel); }
+.status { font-size: 13px; color: var(--steel); margin-top: 8px; }
+.status.ok { color: var(--good); }
+.status.err { color: var(--warn); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.presets button { background: #f1f7f8; border: 1px solid var(--lake); color: var(--lake); padding: 4px 10px; cursor: pointer; font-size: 11.5px; }
+.presets button:hover { background: var(--lake); color: #fff; }
+.table-wrap { overflow: auto; max-height: 360px; border: 1px solid var(--hair); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { position: sticky; top: 0; background: #0e3a4f; color: #fff; text-align: left; padding: 8px 10px; font-weight: 600; }
+td { padding: 7px 10px; border-bottom: 1px solid #e6eef0; }
+tr:nth-child(even) td { background: #f4f8f8; }
+.sql-preview { margin-top: 8px; padding: 10px 12px; background: #14262e; color: #b9e0e6; font-family: ui-monospace, Consolas, Menlo, monospace; font-size: 12px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+#trend-chart { width: 100%; min-height: 220px; }
+.trend-meta { font-size: 12px; color: var(--steel); margin-bottom: 8px; }
+.trend-svg { width: 100%; height: 200px; display: block; background: #f7fafa; border: 1px solid var(--hair); }
+.trend-empty { color: var(--steel); font-size: 13px; padding: 24px 8px; text-align: center; }
+.footer { max-width: 1320px; margin: 0 auto; padding: 0 16px 36px; font-size: 12px; color: var(--steel); }
+</style>
+</head>
+<body>
+  <header class="banner">
+    <div class="banner-inner">
+      <div class="banner-top">
+        <div class="banner-copy">
+          <div class="eyebrow">USA-Health Data Atlas · MEDSL / tonmcg</div>
+          <h1>Presidential <span>Election Data</span></h1>
+          <p class="sub">
+            County and state Democratic and Republican presidential vote counts and percentages for
+            <strong>2004, 2008, 2012, 2016, 2020, and 2024</strong> — from
+            <a href="https://electionlab.mit.edu/" style="color:#7fcad4" target="_blank" rel="noopener">MIT Election Data &amp; Science Lab</a>
+            (2004–2020) and compiled AP/network returns (2024).
+          </p>
+        </div>
+        <div class="banner-aside">
+          <img class="banner-logo" src="upatta_logo.png" alt="Upatta Data Analytics" width="110" height="110"/>
+          <nav class="explorer-nav" aria-label="Atlas navigation">
+            <a href="index.html">Home</a>
+            <a href="usa_county_health_rankings.html">County Health Rankings</a>
+            <a href="usa_health_experience.html">Place-based Health Experience</a>
+            <a href="usa_svi.html">Social Vulnerability Index</a>
+            <a href="usa_mortality_data.html">USA Mortality Data</a>
+            <a href="usa_cancer_atlas.html">USA Cancer Atlas</a>
+            <a href="usa_overdose_mortality.html">Overdose Mortality</a>
+            <a href="usa_census_demograpy.html">Census Demography</a>
+            <a href="usa_religion_census.html">Religion Census</a>
+            <a class="active" href="usa_presidential_election_data.html" aria-current="page">Presidential Elections</a>
+            <a href="eda_model_development.html">EDA &amp; Models</a>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="dataset-tabs" role="tablist" aria-label="Presidential election views">
+    <a class="active" href="usa_presidential_election_data.html" aria-current="page">Explorer</a>
+    <a href="presidential_election_documentation.html">Documentation</a>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Query filters</h2>
+
+      <div class="field">
+        <label for="year">Election year</label>
+        <select id="year"></select>
+      </div>
+
+      <div class="field">
+        <label for="indicator">Metric</label>
+        <select id="indicator"></select>
+      </div>
+
+      <div class="field">
+        <label>Map geography</label>
+        <div class="mode">
+          <label><input type="radio" name="maplevel" value="states" checked> USA state map</label>
+          <label><input type="radio" name="maplevel" value="counties"> County map</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="state">State focus</label>
+        <select id="state"><option value="ALL">All states (USA)</option></select>
+      </div>
+
+      <div class="field">
+        <label for="palette">Color palette</label>
+        <select id="palette"></select>
+      </div>
+
+      <div class="field">
+        <label for="basemap">Basemap</label>
+        <select id="basemap">
+          <option value="osm" selected>Street map (OpenStreetMap)</option>
+          <option value="esri">Satellite (Esri)</option>
+          <option value="gsat">Satellite (Google)</option>
+          <option value="ghybrid">Satellite + labels (Google)</option>
+          <option value="topo">Topographic (Esri)</option>
+        </select>
+      </div>
+
+      <div class="btnrow">
+        <button class="btn" id="btn-apply" type="button">Apply filters</button>
+        <button class="btn ghost" id="btn-sql" type="button">Run SQL</button>
+        <button type="button" class="export-pdf-btn" id="btn-export-map">Export map (PDF / PNG)</button>
+      </div>
+
+      <div id="sf-mount"></div>
+      <div id="gc-mount"></div>
+      <div id="aq-mount"></div>
+
+      <div class="field" style="margin-top:14px">
+        <label for="sql">SQL (summarize &amp; visualize)</label>
+        <textarea id="sql" spellcheck="false"></textarea>
+        <div class="presets" id="presets"></div>
+        <p class="note">
+          Tables: <code>election_states</code>, <code>election_counties</code> for the selected year and metric.
+          Columns: <code>year</code>, <code>fips</code>/<code>state_abbr</code>, <code>county</code>,
+          <code>indicator</code>, <code>indicator_label</code>, <code>val</code>, <code>unit</code>.
+          See <a href="presidential_election_documentation.html">documentation</a>.
+        </p>
+      </div>
+    </aside>
+
+    <section class="main">
+      <div class="kpis" id="kpis"></div>
+      <div class="panel">
+        <h2 id="map-title">Map</h2>
+        <div id="map"></div>
+        <div class="status" id="status">Loading…</div>
+        <div class="sql-preview" id="sql-used" hidden></div>
+      </div>
+      <div class="panel">
+        <h2>Trend</h2>
+        <div class="trend-meta" id="trend-meta"></div>
+        <div id="trend-chart"></div>
+      </div>
+      <div class="panel">
+        <h2>Results table</h2>
+        <div class="table-wrap">
+          <table>
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="footer" id="footer-cite">
+    County presidential returns from MEDSL (2004–2020) and tonmcg (2024).
+    Basemap tiles © Esri, Google, OpenStreetMap.
+  </footer>
+
+<script>
+const USA_BOUNDS = [[24.5, -125], [49.5, -66.5]];
+const DEFAULT_PALETTE = 'spectral';
+
+let DATA = null;
+let INDICATORS = [];
+let CODES = [];
+let YEARS = [];
+let map = null, choropleth = null, choroplethGroup = null, legendCtrl = null, currentBase = null, baseLayers = {};
+let COUNTY_GEO = null, STATE_GEO = null;
+let sfOverlay = null;
+let gcOverlay = null;
+let aqOverlay = null;
+
+const $ = (id) => document.getElementById(id);
+const mapLevel = () => document.querySelector('input[name="maplevel"]:checked').value;
+const indCode = () => $('indicator').value;
+const yearVal = () => Number($('year').value);
+
+function indMeta() {
+  return INDICATORS.find((x) => x.code === indCode()) || { code: indCode(), label: indCode(), unit: '', group: '' };
+}
+const indLabel = () => indMeta().label;
+const indUnit = () => indMeta().unit || '';
+const indIdx = () => CODES.indexOf(indCode());
+const yearIdx = () => YEARS.indexOf(yearVal());
+
+function valueIndex(iIdx, yIdx) {
+  return iIdx * YEARS.length + yIdx;
+}
+
+function fmt(v, unit) {
+  if (v === null || v === undefined || Number.isNaN(v)) return '—';
+  if (typeof v !== 'number') return String(v);
+  const u = unit != null ? unit : indUnit();
+  if (u === '%') {
+    return v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+  }
+  if (Math.abs(v) >= 1000) {
+    return v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  }
+  return v.toLocaleString(undefined, { maximumFractionDigits: Number.isInteger(v) ? 0 : 2 });
+}
+
+function activeColors() {
+  const id = ($('palette') && $('palette').value) || DEFAULT_PALETTE;
+  return (window.MapStyleControls && MapStyleControls.getColors(id))
+    || ['#ffffcc', '#a1dab4', '#41b6c4', '#2c7fb8', '#253494'];
+}
+
+function isDivergingMetric() {
+  return indCode() === 'margin_pct';
+}
+
+function colorScale(vmin, vmax, v) {
+  if (!Number.isFinite(v)) return '#cbd5e1';
+  const colors = activeColors();
+  if (isDivergingMetric()) {
+    const zero = 0;
+    const mid = (colors.length - 1) / 2;
+    if (v >= zero) {
+      const t = vmax > zero ? (v - zero) / (vmax - zero) : 0;
+      const idx = Math.min(colors.length - 1, Math.round(mid + t * (colors.length - 1 - mid)));
+      return colors[idx];
+    }
+    const t = vmin < zero ? (zero - v) / (zero - vmin) : 0;
+    const idx = Math.max(0, Math.round(mid - t * mid));
+    return colors[idx];
+  }
+  if (vmax <= vmin) return '#cbd5e1';
+  const t = Math.max(0, Math.min(1, (v - vmin) / (vmax - vmin)));
+  const idx = Math.min(colors.length - 1, Math.floor(t * (colors.length - 1) + 1e-9));
+  return colors[idx];
+}
+
+function setMapLevel(level) {
+  const el = document.querySelector(`input[name="maplevel"][value="${level}"]`);
+  if (el) el.checked = true;
+}
+
+function onLegendLevelChange(level) {
+  setMapLevel(level);
+  applyFilters();
+}
+
+function onLegendPaletteChange(id) {
+  if ($('palette')) $('palette').value = id;
+  applyFilters();
+}
+
+function extractVal(values) {
+  const i = indIdx();
+  const y = yearIdx();
+  if (i < 0 || y < 0 || !values) return null;
+  const v = values[valueIndex(i, y)];
+  return v == null || Number.isNaN(Number(v)) ? null : Number(v);
+}
+
+function buildTables() {
+  const year = yearVal();
+  const code = indCode();
+  const meta = indMeta();
+  const stateRows = DATA.state_rows.map((r) => {
+    const val = extractVal(r[1]);
+    return {
+      year,
+      state_abbr: r[0],
+      indicator: code,
+      indicator_label: meta.label,
+      val,
+      unit: meta.unit,
+    };
+  }).filter((r) => r.val != null);
+
+  const countyRows = DATA.county_rows.map((r) => {
+    const val = extractVal(r[3]);
+    return {
+      year,
+      fips: String(r[0]).padStart(5, '0'),
+      state_abbr: r[1],
+      county: r[2],
+      indicator: code,
+      indicator_label: meta.label,
+      val,
+      unit: meta.unit,
+    };
+  }).filter((r) => r.val != null);
+
+  alasql('DROP TABLE IF EXISTS election_states');
+  alasql('DROP TABLE IF EXISTS election_counties');
+  alasql('CREATE TABLE election_states');
+  alasql('CREATE TABLE election_counties');
+  alasql.tables.election_states.data = stateRows;
+  alasql.tables.election_counties.data = countyRows;
+}
+
+function fillYears() {
+  const sel = $('year');
+  const prev = sel.value;
+  sel.innerHTML = '';
+  YEARS.forEach((y) => {
+    const opt = document.createElement('option');
+    opt.value = String(y);
+    opt.textContent = String(y);
+    sel.appendChild(opt);
+  });
+  if ([...sel.options].some((o) => o.value === prev)) sel.value = prev;
+  else if ([...sel.options].some((o) => o.value === '2024')) sel.value = '2024';
+  else if (sel.options.length) sel.selectedIndex = sel.options.length - 1;
+}
+
+function fillIndicators() {
+  const sel = $('indicator');
+  const prev = sel.value;
+  sel.innerHTML = '';
+  const groups = [];
+  const byGroup = {};
+  INDICATORS.forEach((c) => {
+    const g = c.group || 'Other';
+    if (!byGroup[g]) { byGroup[g] = []; groups.push(g); }
+    byGroup[g].push(c);
+  });
+  groups.forEach((g) => {
+    const og = document.createElement('optgroup');
+    og.label = g;
+    byGroup[g].forEach((c) => {
+      const opt = document.createElement('option');
+      opt.value = c.code;
+      opt.textContent = c.label;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+  if ([...sel.querySelectorAll('option')].some((o) => o.value === prev)) sel.value = prev;
+  else if ([...sel.querySelectorAll('option')].some((o) => o.value === 'margin_pct')) sel.value = 'margin_pct';
+  else if (sel.options.length) sel.selectedIndex = 0;
+}
+
+function fillStates() {
+  const sel = $('state');
+  const states = DATA.state_rows.map((r) => r[0]).filter(Boolean).sort();
+  sel.innerHTML = '<option value="ALL">All states (USA)</option>';
+  states.forEach((s) => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    sel.appendChild(opt);
+  });
+}
+
+function defaultSQL() {
+  const level = mapLevel();
+  const state = $('state').value;
+  if (level === 'states') {
+    return `SELECT state_abbr, year, indicator, indicator_label, val, unit\nFROM election_states\nORDER BY val DESC`;
+  }
+  if (state === 'ALL') {
+    return `SELECT fips, county, state_abbr, year, indicator, val, unit\nFROM election_counties\nORDER BY val DESC`;
+  }
+  return `SELECT fips, county, state_abbr, year, indicator, val, unit\nFROM election_counties\nWHERE state_abbr = '${state}'\nORDER BY val DESC`;
+}
+
+function fillPresets() {
+  const box = $('presets');
+  box.innerHTML = '';
+  const examples = [
+    {
+      label: 'Top Dem margin',
+      indicator: 'margin_pct',
+      sql: 'SELECT fips, county, state_abbr, val, unit FROM election_counties ORDER BY val DESC LIMIT 25',
+      level: 'counties',
+    },
+    {
+      label: 'Top Rep margin',
+      indicator: 'margin_pct',
+      sql: 'SELECT fips, county, state_abbr, val, unit FROM election_counties ORDER BY val ASC LIMIT 25',
+      level: 'counties',
+    },
+    {
+      label: 'Democratic %',
+      indicator: 'dem_pct',
+      sql: 'SELECT fips, county, state_abbr, val, unit FROM election_counties ORDER BY val DESC LIMIT 25',
+      level: 'counties',
+    },
+    {
+      label: 'Two-party Dem %',
+      indicator: 'dem_two_party_pct',
+      sql: 'SELECT fips, county, state_abbr, val, unit FROM election_counties ORDER BY val DESC LIMIT 25',
+      level: 'counties',
+    },
+    {
+      label: 'States by Dem margin',
+      indicator: 'margin_pct',
+      sql: 'SELECT state_abbr, val, unit FROM election_states ORDER BY val DESC',
+      level: 'states',
+    },
+    {
+      label: 'Harris Co. TX votes',
+      indicator: 'dem_votes',
+      sql: "SELECT fips, county, state_abbr, val, unit FROM election_counties WHERE fips = '48201'",
+      level: 'counties',
+      state: 'TX',
+    },
+    {
+      label: 'Swing counties (|margin| < 5)',
+      indicator: 'margin_pct',
+      sql: 'SELECT fips, county, state_abbr, val, unit FROM election_counties WHERE ABS(val) < 5 ORDER BY ABS(val) ASC LIMIT 40',
+      level: 'counties',
+    },
+  ];
+  examples.forEach((ex) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = ex.label; b.title = ex.sql;
+    b.addEventListener('click', () => {
+      if (ex.indicator) $('indicator').value = ex.indicator;
+      if (ex.level) setMapLevel(ex.level);
+      if (ex.state) $('state').value = ex.state;
+      buildTables();
+      $('sql').value = ex.sql;
+      runSQL();
+    });
+    box.appendChild(b);
+  });
+  const sync = document.createElement('button');
+  sync.type = 'button'; sync.textContent = 'Sync SQL from filters';
+  sync.addEventListener('click', () => { $('sql').value = defaultSQL(); });
+  box.appendChild(sync);
+}
+
+function setKPIs(rows) {
+  const vals = rows.map((r) => Number(r.val)).filter(Number.isFinite).sort((a, b) => a - b);
+  const n = vals.length;
+  const min = n ? vals[0] : null;
+  const max = n ? vals[n - 1] : null;
+  const med = n ? vals[Math.floor(n / 2)] : null;
+  const unit = indUnit();
+  $('kpis').innerHTML = [
+    ['Areas', n.toLocaleString()],
+    ['Min', fmt(min, unit)],
+    ['Median', fmt(med, unit)],
+    ['Max', fmt(max, unit)],
+  ].map(([lab, num]) => `<div class="kpi"><div class="num">${num}</div><div class="lab">${lab}${unit ? ` (${unit})` : ''}</div></div>`).join('');
+}
+
+function renderTable(rows) {
+  const thead = $('thead'), tbody = $('tbody');
+  if (!rows.length) { thead.innerHTML = ''; tbody.innerHTML = '<tr><td>No rows returned.</td></tr>'; return; }
+  const cols = Object.keys(rows[0]);
+  thead.innerHTML = '<tr>' + cols.map((c) => `<th>${c}</th>`).join('') + '</tr>';
+  const show = rows.slice(0, 500);
+  tbody.innerHTML = show.map((row) => '<tr>' + cols.map((c) => {
+    const v = row[c];
+    if (c === 'val') return `<td>${fmt(v, row.unit || indUnit())}</td>`;
+    return `<td>${fmt(v)}</td>`;
+  }).join('') + '</tr>').join('')
+    + (rows.length > 500 ? `<tr><td colspan="${cols.length}">Showing first 500 of ${rows.length} rows.</td></tr>` : '');
+}
+
+function median(arr) {
+  if (!arr.length) return null;
+  const s = arr.slice().sort((a, b) => a - b);
+  return s[Math.floor(s.length / 2)];
+}
+
+function mean(arr) {
+  if (!arr.length) return null;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+function trendSeries() {
+  const i = indIdx();
+  if (i < 0) return [];
+  const focus = $('state').value;
+  const points = [];
+  YEARS.forEach((year, yIdx) => {
+    const idx = valueIndex(i, yIdx);
+    let vals;
+    if (focus && focus !== 'ALL') {
+      vals = DATA.county_rows
+        .filter((r) => r[1] === focus)
+        .map((r) => r[3][idx])
+        .filter((v) => v != null && Number.isFinite(Number(v)))
+        .map(Number);
+      const m = mean(vals);
+      if (m != null) points.push({ year, val: m, mode: 'mean', n: vals.length });
+    } else {
+      vals = DATA.county_rows
+        .map((r) => r[3][idx])
+        .filter((v) => v != null && Number.isFinite(Number(v)))
+        .map(Number);
+      const m = median(vals);
+      if (m != null) points.push({ year, val: m, mode: 'median', n: vals.length });
+    }
+  });
+  return points;
+}
+
+function renderTrendChart() {
+  const host = $('trend-chart');
+  const metaEl = $('trend-meta');
+  const pts = trendSeries();
+  const focus = $('state').value;
+  const unit = indUnit();
+  const modeLabel = focus && focus !== 'ALL'
+    ? `County mean in ${focus}`
+    : 'U.S. county median';
+  metaEl.textContent = `${indLabel()} · ${modeLabel} · ${YEARS[0]}–${YEARS[YEARS.length - 1]}`;
+
+  if (!pts.length) {
+    host.innerHTML = '<div class="trend-empty">No trend values for this indicator.</div>';
+    return;
+  }
+
+  const W = 720, H = 200, padL = 64, padR = 16, padT = 16, padB = 36;
+  const vals = pts.map((p) => p.val);
+  let vmin = Math.min(...vals), vmax = Math.max(...vals);
+  if (vmin === vmax) { vmin -= 1; vmax += 1; }
+  const x0 = padL, x1 = W - padR, y0 = padT, y1 = H - padB;
+  const xAt = (i) => x0 + (pts.length === 1 ? (x1 - x0) / 2 : (i / (pts.length - 1)) * (x1 - x0));
+  const yAt = (v) => y1 - ((v - vmin) / (vmax - vmin)) * (y1 - y0);
+  const path = pts.map((p, i) => `${i ? 'L' : 'M'}${xAt(i).toFixed(1)},${yAt(p.val).toFixed(1)}`).join(' ');
+  const dots = pts.map((p, i) => {
+    const cx = xAt(i), cy = yAt(p.val);
+    const tip = `${p.year}: ${fmt(p.val, unit)} (n=${p.n})`;
+    return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="3.5" fill="#14707e"><title>${tip}</title></circle>`;
+  }).join('');
+  const xLabels = pts.filter((_, i) => i === 0 || i === pts.length - 1 || i % 2 === 0).map((p, _, arr) => {
+    const i = pts.indexOf(p);
+    return `<text x="${xAt(i).toFixed(1)}" y="${H - 10}" text-anchor="middle" font-size="11" fill="#5a6e78" font-family="Consolas, monospace">${p.year}</text>`;
+  }).join('');
+  const yTicks = [vmin, (vmin + vmax) / 2, vmax].map((v) => {
+    const y = yAt(v);
+    return `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" font-size="10" fill="#5a6e78" font-family="Consolas, monospace">${fmt(v, unit)}</text>`
+      + `<line x1="${padL}" y1="${y}" x2="${x1}" y2="${y}" stroke="#e6eef0" stroke-width="1"/>`;
+  }).join('');
+
+  host.innerHTML = `<svg class="trend-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Trend chart">
+    ${yTicks}
+    <path d="${path}" fill="none" stroke="#14707e" stroke-width="2.5"/>
+    ${dots}
+    ${xLabels}
+  </svg>`;
+}
+
+function initMap() {
+  map = L.map('map', {
+    zoomControl: false, worldCopyJump: false,
+    maxBounds: L.latLngBounds([-5, -180], [72, -40]),
+    maxBoundsViscosity: 0.85, minZoom: 3,
+  });
+  map.fitBounds(USA_BOUNDS, { padding: [10, 10] });
+  baseLayers = {
+    esri: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri', maxZoom: 18 }),
+    gsat: L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { attribution: 'Imagery © Google', maxZoom: 20 }),
+    ghybrid: L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { attribution: 'Imagery © Google', maxZoom: 20 }),
+    osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors', maxZoom: 19 }),
+    topo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri', maxZoom: 18 }),
+  };
+  currentBase = baseLayers.osm.addTo(map);
+  choroplethGroup = L.layerGroup().addTo(map);
+  if (window.attachMapZoomControl) attachMapZoomControl(map, { bounds: USA_BOUNDS });
+  if (window.attachMapLayersControl) {
+    attachMapLayersControl(map, baseLayers, {
+      selectId: 'basemap',
+      overlays: { 'Choropleth data': choroplethGroup },
+      onChange(key) { currentBase = baseLayers[key] || currentBase; },
+    });
+  }
+  map.on('overlayremove', (e) => {
+    if (e.layer === choroplethGroup && legendCtrl) {
+      map.removeControl(legendCtrl);
+      legendCtrl = null;
+    }
+  });
+  map.on('overlayadd', (e) => {
+    if (e.layer === choroplethGroup) applyFilters();
+  });
+  setTimeout(() => map.invalidateSize(), 50);
+}
+
+function setBasemap(key) {
+  const next = baseLayers[key] || baseLayers.osm;
+  if (currentBase === next && map.hasLayer(next)) return;
+  if (currentBase) map.removeLayer(currentBase);
+  currentBase = next.addTo(map);
+}
+
+function clearLayer() {
+  if (choroplethGroup) choroplethGroup.clearLayers();
+  choropleth = null;
+}
+
+function choroplethVisible() {
+  return choroplethGroup && map && map.hasLayer(choroplethGroup);
+}
+
+function updateLegend(title, vmin, vmax, subtitle) {
+  if (legendCtrl) { map.removeControl(legendCtrl); legendCtrl = null; }
+  if (!choroplethVisible()) return;
+  const colors = activeColors();
+  const paletteId = ($('palette') && $('palette').value) || DEFAULT_PALETTE;
+  const level = mapLevel();
+  legendCtrl = L.control({ position: 'topright' });
+  legendCtrl.onAdd = function () {
+    const div = L.DomUtil.create('div', 'map-legend');
+    const ramp = colors.map((c) => `<span style="background:${c}"></span>`).join('');
+    const unit = indUnit();
+    div.innerHTML = `<strong>${title}</strong><div class="legend-ramp">${ramp}</div>`
+      + `<div class="legend-labels"><span>${fmt(vmin, unit)}</span><span>${fmt(vmax, unit)}</span></div>`
+      + `<div style="margin-top:6px;color:#5a6e78">${subtitle || unit || 'Presidential election'}</div>`;
+    if (window.MapStyleControls) {
+      MapStyleControls.bindLegendChrome(div, {
+        levels: [
+          { value: 'states', label: 'State' },
+          { value: 'counties', label: 'County' },
+        ],
+        level,
+        paletteId,
+        onLevelChange: onLegendLevelChange,
+        onPaletteChange: onLegendPaletteChange,
+      });
+    }
+    L.DomEvent.disableClickPropagation(div);
+    return div;
+  };
+  legendCtrl.addTo(map);
+}
+
+function fitToLayer(layer, tight) {
+  map.invalidateSize();
+  try {
+    const b = layer.getBounds();
+    if (!b.isValid()) throw new Error('bad');
+    const spanLng = Math.abs(b.getEast() - b.getWest());
+    const spanLat = Math.abs(b.getNorth() - b.getSouth());
+    if (spanLng > 100 || spanLat > 60) {
+      map.fitBounds(USA_BOUNDS, { padding: [20, 20], maxZoom: 5 });
+      return;
+    }
+    map.fitBounds(b.pad(0.06), { padding: [28, 28], maxZoom: tight ? 9 : 6, animate: true });
+  } catch (_) {
+    map.fitBounds(USA_BOUNDS, { padding: [20, 20], maxZoom: 5 });
+  }
+}
+
+function featureCountyFips(f) {
+  let fid = f.id;
+  if (fid == null && f.properties && f.properties.STATE != null) {
+    fid = String(f.properties.STATE).padStart(2, '0') + String(f.properties.COUNTY).padStart(3, '0');
+  }
+  fid = String(fid || '').replace(/^0500000US/, '');
+  if (fid.length > 5) fid = fid.slice(-5);
+  return fid.padStart(5, '0');
+}
+
+function stateAbbr(feature) {
+  const p = feature.properties || {};
+  return (p.abbr || p.STUSPS || feature.id || '').toString().toUpperCase();
+}
+
+function renderStateMap(rows) {
+  const valueMap = {};
+  rows.forEach((r) => {
+    const a = String(r.state_abbr || '').toUpperCase();
+    const v = Number(r.val);
+    if (a && Number.isFinite(v)) valueMap[a] = v;
+  });
+  clearLayer();
+  const vals = Object.values(valueMap);
+  if (!vals.length) return;
+  const vmin = Math.min(...vals), vmax = Math.max(...vals);
+  const onlyOne = Object.keys(valueMap).length === 1;
+  const unit = indUnit();
+  const features = STATE_GEO.features.filter((f) => {
+    const abbr = stateAbbr(f);
+    return onlyOne ? valueMap[abbr] !== undefined : true;
+  });
+  choropleth = L.geoJSON({ type: 'FeatureCollection', features }, {
+    style(feature) {
+      const abbr = stateAbbr(feature);
+      const v = valueMap[abbr];
+      if (v === undefined) return { fillColor: '#cbd5e1', color: '#334155', weight: 0.6, fillOpacity: 0.2 };
+      return { fillColor: colorScale(vmin, vmax, v), color: '#0f172a', weight: 1, fillOpacity: 0.78 };
+    },
+    onEachFeature(feature, layer) {
+      const abbr = stateAbbr(feature);
+      const name = (feature.properties && (feature.properties.name || feature.properties.NAME)) || abbr;
+      const v = valueMap[abbr];
+      layer.bindTooltip(
+        v === undefined
+          ? `<b>${name}</b><br>No data`
+          : `<b>${name} (${abbr})</b><br>${indLabel()} (${yearVal()}): <b>${fmt(v, unit)}</b>`,
+        { sticky: true }
+      );
+    },
+  });
+  choroplethGroup.addLayer(choropleth);
+  updateLegend(indLabel(), vmin, vmax, `${yearVal()} · ${unit || 'Presidential election'}`);
+  if (choroplethVisible()) fitToLayer(choropleth, onlyOne);
+}
+
+function renderCountyMap(rows, stateFocus) {
+  const valueMap = {}, nameMap = {};
+  rows.forEach((r) => {
+    const fips = String(r.fips || '').padStart(5, '0');
+    const v = Number(r.val);
+    if (Number.isFinite(v)) valueMap[fips] = v;
+    nameMap[fips] = r.county || fips;
+  });
+  clearLayer();
+  const vals = Object.values(valueMap);
+  if (!vals.length) return;
+  const sorted = vals.slice().sort((a, b) => a - b);
+  const vmin = sorted[Math.floor(sorted.length * 0.02)] ?? sorted[0];
+  const vmax = sorted[Math.floor(sorted.length * 0.98)] ?? sorted[sorted.length - 1];
+  const focus = stateFocus && stateFocus !== 'ALL' ? stateFocus : null;
+  const unit = indUnit();
+  const features = COUNTY_GEO.features.filter((f) => {
+    const fips = featureCountyFips(f);
+    if (valueMap[fips] === undefined) return false;
+    if (focus) {
+      const row = DATA.county_rows.find((r) => String(r[0]).padStart(5, '0') === fips);
+      return row && row[1] === focus;
+    }
+    return true;
+  });
+  choropleth = L.geoJSON({ type: 'FeatureCollection', features }, {
+    style(feature) {
+      const fips = featureCountyFips(feature);
+      return { fillColor: colorScale(vmin, vmax, valueMap[fips]), color: '#0f172a', weight: focus ? 0.7 : 0.3, fillOpacity: 0.78 };
+    },
+    onEachFeature(feature, layer) {
+      const fips = featureCountyFips(feature);
+      layer.bindTooltip(
+        `<b>${nameMap[fips] || fips}</b><br>FIPS ${fips}<br>${indLabel()} (${yearVal()}): <b>${fmt(valueMap[fips], unit)}</b>`,
+        { sticky: true }
+      );
+    },
+  });
+  choroplethGroup.addLayer(choropleth);
+  updateLegend(indLabel(), vmin, vmax, focus ? `Counties in ${focus} · ${yearVal()}` : `County choropleth · ${yearVal()}`);
+  if (choroplethVisible()) fitToLayer(choropleth, Boolean(focus));
+}
+
+function runSQL() {
+  const status = $('status');
+  const sqlBox = $('sql-used');
+  const sql = $('sql').value.trim();
+  if (!sql) { status.textContent = 'Enter a SQL query.'; status.className = 'status err'; return; }
+
+  try {
+    buildTables();
+    const level = mapLevel();
+    const state = $('state').value;
+
+    let rows = alasql(sql);
+    if (!Array.isArray(rows)) rows = [];
+    rows = rows.map((r) => {
+      const out = { ...r };
+      if (out.val === undefined) {
+        if (out.mean_val !== undefined) out.val = out.mean_val;
+        else if (out.max_val !== undefined) out.val = out.max_val;
+        else if (out.min_val !== undefined) out.val = out.min_val;
+      }
+      return out;
+    });
+
+    let drawLevel = level;
+    if (rows.length && rows[0].fips !== undefined) drawLevel = 'counties';
+    else if (rows.length && rows[0].state_abbr !== undefined && rows[0].fips === undefined) drawLevel = 'states';
+    document.querySelector(`input[name="maplevel"][value="${drawLevel}"]`).checked = true;
+
+    const statesIn = [...new Set(rows.map((r) => r.state_abbr).filter(Boolean))];
+    const focus = statesIn.length === 1 ? statesIn[0] : state;
+
+    setKPIs(rows);
+    renderTable(rows);
+    renderTrendChart();
+    $('map-title').textContent = drawLevel === 'states' ? 'USA state map' : 'County map';
+
+    if (!rows.length || rows[0].val === undefined) {
+      clearLayer();
+      status.textContent = `Query OK — ${rows.length} row(s). No mappable val.`;
+      status.className = 'status ok';
+    } else if (drawLevel === 'states') {
+      renderStateMap(rows);
+      status.textContent = `Query OK — ${rows.length} state row(s) · ${yearVal()} · ${indLabel()}.`;
+      status.className = 'status ok';
+    } else {
+      renderCountyMap(rows, focus);
+      status.textContent = focus && focus !== 'ALL'
+        ? `Query OK — ${rows.length} counties in ${focus}; map zoomed to state.`
+        : `Query OK — ${rows.length} counties mapped · ${yearVal()}.`;
+      status.className = 'status ok';
+    }
+
+    if (sfOverlay) sfOverlay.refresh();
+    if (gcOverlay) gcOverlay.refresh();
+    if (aqOverlay) aqOverlay.refresh();
+    sqlBox.hidden = false;
+    sqlBox.textContent = sql;
+  } catch (err) {
+    status.textContent = String(err.message || err);
+    status.className = 'status err';
+  }
+}
+
+function applyFilters() {
+  setBasemap($('basemap').value);
+  buildTables();
+  $('sql').value = defaultSQL();
+  runSQL();
+}
+
+function initFooter() {
+  const src = DATA.meta.source || 'U.S. County Presidential Election Returns';
+  const url = DATA.meta.source_url || 'https://electionlab.mit.edu/';
+  const note = DATA.meta.data_note || '';
+  $('footer-cite').innerHTML =
+    `${src}. Source:
+    <a href="${url}" target="_blank" rel="noopener">${url}</a>.
+    ${note ? note + ' ' : ''}
+    <a href="presidential_election_documentation.html">Documentation</a>.
+    Basemap tiles © Esri, Google, OpenStreetMap.`;
+}
+
+function init() {
+  const status = $('status');
+  try {
+    if (!window.PRESIDENTIAL_ELECTION) throw new Error('Presidential election data failed to load.');
+    if (!window.COUNTY_GEO || !window.STATE_GEO) throw new Error('Boundary GeoJSON failed to load.');
+    DATA = window.PRESIDENTIAL_ELECTION;
+    INDICATORS = DATA.meta.indicators;
+    CODES = DATA.meta.codes;
+    YEARS = DATA.meta.years;
+    COUNTY_GEO = window.COUNTY_GEO;
+    STATE_GEO = window.STATE_GEO;
+    COUNTY_GEO.features.forEach((f) => { f.id = featureCountyFips(f); });
+
+    fillYears();
+    fillIndicators();
+    fillStates();
+    fillPresets();
+    initFooter();
+    if (window.MapStyleControls) MapStyleControls.fillPaletteSelect($('palette'), DEFAULT_PALETTE);
+    initMap();
+    buildTables();
+    if (window.SuperfundOverlay && window.SUPERFUND_NPL) {
+      sfOverlay = new SuperfundOverlay({
+        map,
+        mount: 'sf-mount',
+        getPageState: () => $('state').value,
+      });
+    }
+    if (window.GeochemSoilOverlay && window.GEOCHEM_SOIL_META) {
+      gcOverlay = new GeochemSoilOverlay({
+        map,
+        mount: 'gc-mount',
+        getPageState: () => $('state').value,
+      });
+    }
+    if (window.AirQualityOverlay && window.AIR_QUALITY_AQS) {
+      aqOverlay = new AirQualityOverlay({
+        map,
+        mount: 'aq-mount',
+        getPageState: () => $('state').value,
+      });
+    }
+    if (window.AtlasMapExport) {
+      AtlasMapExport.attach({
+        map,
+        mapEl: '#map',
+        buttonId: 'btn-export-map',
+        baseLayers,
+        filenamePrefix: 'presidential-election-map',
+        getTitle: () => `${indLabel()} · ${yearVal()}`,
+        getSource: () => `${DATA.meta.source || 'Presidential election'} · ${yearVal()}`,
+        getBasemapKey: () => ($('basemap') && $('basemap').value) || 'osm',
+        setBasemapKey: (key) => { if ($('basemap')) $('basemap').value = key; setBasemap(key); },
+        getChoroplethGroup: () => choroplethGroup,
+        getOverlays: () => ({ sf: sfOverlay, gc: gcOverlay, aq: aqOverlay }),
+        overlays: { superfund: true, soil: true, air: true },
+      });
+    }
+
+    $('btn-apply').addEventListener('click', applyFilters);
+    $('btn-sql').addEventListener('click', runSQL);
+    $('year').addEventListener('change', () => { $('sql').value = defaultSQL(); });
+    $('indicator').addEventListener('change', () => {
+      if ($('palette') && isDivergingMetric()) $('palette').value = 'spectral';
+      $('sql').value = defaultSQL();
+    });
+    document.querySelectorAll('input[name="maplevel"]').forEach((el) => {
+      el.addEventListener('change', () => { $('sql').value = defaultSQL(); });
+    });
+    $('state').addEventListener('change', () => { $('sql').value = defaultSQL(); });
+    $('basemap').addEventListener('change', () => setBasemap($('basemap').value));
+    $('palette') && $('palette').addEventListener('change', applyFilters);
+    applyFilters();
+    status.textContent = `Loaded ${Number(DATA.meta.n_counties || DATA.county_rows.length).toLocaleString()} counties · elections ${YEARS[0]}–${YEARS[YEARS.length - 1]}.`;
+    status.className = 'status ok';
+  } catch (err) {
+    status.textContent = String(err.message || err);
+    status.className = 'status err';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

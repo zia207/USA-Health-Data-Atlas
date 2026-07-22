@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Religion Census Documentation · USA-Health Data Atlas</title>
+<style>
+:root {
+  --ink: #0b1f2a; --panel: #ffffff; --rail: #0e3a4f; --accent: #1d7a8c;
+  --paper: #e8eef1; --hair: #c5d0d6; --steel: #5a6e78; --lake: #14707e;
+  --focus: #0e4f8b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--paper); color: var(--ink); line-height: 1.55;
+}
+a { color: var(--lake); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.banner {
+  background: linear-gradient(90deg, #071821 0%, #0e3a4f 55%, #14586f 100%);
+  color: #e8f2f5; border-bottom: 4px solid var(--accent);
+}
+.banner-inner { max-width: 1180px; margin: 0 auto; padding: 18px 20px 20px; }
+.banner-top { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.banner-copy { min-width: 0; flex: 1; }
+.banner-aside { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.banner-logo {
+  display: block; width: clamp(72px, 12vw, 110px); height: auto;
+  background: #fff; border-radius: 10px; padding: 5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+.explorer-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 520px; }
+.explorer-nav a {
+  display: inline-block; background: rgba(255,255,255,.08); color: #e8f2f5;
+  text-decoration: none; border: 1px solid rgba(255,255,255,.22);
+  padding: 6px 10px; font-size: 12px; white-space: nowrap;
+}
+.explorer-nav a:hover { background: rgba(255,255,255,.14); }
+.explorer-nav a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.eyebrow {
+  font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+  letter-spacing: .14em; text-transform: uppercase; color: #8fb6bd;
+}
+h1.page-title { margin: 8px 0 6px; font-size: clamp(26px, 3.5vw, 38px); line-height: 1.08; font-weight: 750; }
+h1.page-title span { color: #7fcad4; }
+.sub { color: #b9c9ce; font-size: 14px; max-width: 820px; }
+.layout {
+  max-width: 1180px; margin: 0 auto; padding: 14px 16px 48px;
+  display: grid; grid-template-columns: 240px 1fr; gap: 18px;
+}
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.toc {
+  position: sticky; top: 12px; align-self: start;
+  background: var(--panel); border: 1px solid var(--hair); padding: 14px;
+}
+@media (max-width: 900px) { .toc { position: static; } }
+.toc h2 {
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--steel); margin: 0 0 10px; font-family: ui-monospace, Consolas, monospace;
+}
+.toc ul { list-style: none; }
+.toc li { margin-bottom: 6px; }
+.toc a { text-decoration: none; font-size: 13px; color: var(--rail); font-weight: 600; }
+.toc a:hover { color: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.btn {
+  display: inline-block; background: var(--rail); color: #fff; text-decoration: none;
+  padding: 8px 12px; font-size: 13px; font-weight: 650;
+}
+.btn:hover { background: var(--accent); }
+.btn.ghost { background: transparent; color: var(--rail); border: 1px solid var(--hair); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.content { min-width: 0; }
+.doc-section {
+  background: var(--panel); border: 1px solid var(--hair); padding: 20px 22px 28px;
+  margin-bottom: 16px;
+}
+.doc-section h1 { font-size: 1.45rem; margin: 0 0 .6em; line-height: 1.2; }
+.doc-section h2 {
+  font-size: 1.15rem; margin: 1.4em 0 .45em; padding-bottom: 4px;
+  border-bottom: 1px solid var(--hair); line-height: 1.25;
+}
+.doc-section h3 { font-size: 1rem; margin: 1.1em 0 .35em; }
+.doc-section p, .doc-section ul, .doc-section ol { margin: .55em 0; }
+.doc-section li { margin: .2em 0 .2em 1.2em; }
+.doc-section table {
+  width: 100%; border-collapse: collapse; font-size: 13px; margin: .8em 0;
+}
+.doc-section th, .doc-section td {
+  border: 1px solid var(--hair); padding: 7px 9px; text-align: left; vertical-align: top;
+}
+.doc-section th { background: #0e3a4f; color: #fff; font-weight: 600; }
+.doc-section tr:nth-child(even) td { background: #f4f8f8; }
+.doc-section code {
+  font-family: ui-monospace, Consolas, monospace; font-size: .9em;
+  background: #eef5f7; padding: 1px 4px;
+}
+.doc-section pre {
+  background: #14262e; color: #b9e0e6; padding: 12px 14px; overflow: auto;
+  font-size: 12px; line-height: 1.45; margin: .8em 0;
+}
+.doc-section pre code { background: transparent; padding: 0; color: inherit; }
+.doc-section hr { border: none; border-top: 1px solid var(--hair); margin: 1.5em 0; }
+.doc-section em { color: #33474f; }
+.footer {
+  max-width: 1180px; margin: 0 auto; padding: 0 16px 36px;
+  font-size: 12px; color: var(--steel);
+}
+</style>
+</head>
+<body>
+  <header class="banner">
+    <div class="banner-inner">
+      <div class="banner-top">
+        <div class="banner-copy">
+          <div class="eyebrow">USA-Health Data Atlas · RCMS / ARDA</div>
+          <h1 class="page-title">Religion Census <span>Documentation</span></h1>
+          <p class="sub">
+            Dataset documentation for county-level religious congregations, adherents,
+            and adherence rates from the Religious Congregations &amp; Membership Study (RCMS) 2010.
+          </p>
+        </div>
+        <div class="banner-aside">
+          <img class="banner-logo" src="upatta_logo.png" alt="Upatta Data Analytics" width="110" height="110"/>
+          <nav class="explorer-nav" aria-label="Atlas navigation">
+            <a href="index.html">Home</a>
+            <a href="usa_religion_census.html">Religion Census</a>
+            <a class="active" href="religion_census_documentation.html" aria-current="page">Documentation</a>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="toc" aria-label="Table of contents">
+      <h2>On this page</h2>
+      <ul>
+        <li><a href="#definitions-rcms">Definitions (RCMS)</a></li>
+        <li><a href="#data-sources">Data sources</a></li>
+        <li><a href="#repository-files">Repository files</a></li>
+        <li><a href="#2020-usrc-county-schema">2020 USRC county schema</a></li>
+        <li><a href="#ten-dominant-groups">Ten dominant groups</a></li>
+        <li><a href="#wide-file-schema-2010">Wide file schema (2010)</a></li>
+        <li><a href="#long-file-schema">Long file schema</a></li>
+        <li><a href="#atlas-explorer-schema">Atlas explorer schema</a></li>
+        <li><a href="#coverage-and-limitations">Coverage and limitations</a></li>
+        <li><a href="#example-sql-explorer">Example SQL (explorer)</a></li>
+        <li><a href="#citations">Citations</a></li>
+      </ul>
+      <div class="actions">
+        <a class="btn" href="usa_religion_census.html">Open Religion Explorer</a>
+        <a class="btn ghost" href="https://www.thearda.com/data-archive?fid=RCMSCY10" target="_blank" rel="noopener">ARDA RCMS 2010</a>
+        <a class="btn ghost" href="https://www.usreligioncensus.org/" target="_blank" rel="noopener">US Religion Census</a>
+      </div>
+    </aside>
+    <main class="content">
+      <article class="doc-section" id="religion-census"><h1>U.S. County Religion Census (RCMS 2010) — Dataset Documentation</h1>
+<p>County-level <strong>religious congregations, adherents, and adherence rates</strong> from the
+<strong>Religious Congregations &amp; Membership Study (RCMS) 2010</strong> and the <strong>2020 U.S.
+Religion Census (USRC Group Detail)</strong>. The <strong>USA Religion Census</strong> explorer
+(<code>usa_religion_census.html</code>) maps counties for both years with up to 375 groups in 2020.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Geographic scope</td>
+<td>United States — 3,111 counties (2010) / 3,142 counties (2020)</td>
+</tr>
+<tr>
+<td>Reference years</td>
+<td>2010 (RCMS) and 2020 (USRC Group Detail)</td>
+</tr>
+<tr>
+<td>Religious groups</td>
+<td>242 groups (2010) · 375 groups (2020)</td>
+</tr>
+<tr>
+<td>Metrics</td>
+<td>Congregations, adherents, adherence rate per 1,000 population</td>
+</tr>
+<tr>
+<td>Atlas build script</td>
+<td><code>scripts/build_religion_census_data.py</code></td>
+</tr>
+<tr>
+<td>Source builders</td>
+<td><code>data/religion_census/build_religion_county_2010.py</code>, <code>build_religion_county_2020.py</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="definitions-rcms">Definitions (RCMS)</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Congregations</strong></td>
+<td>Religious groups meeting regularly for worship</td>
+</tr>
+<tr>
+<td><strong>Adherents</strong></td>
+<td>Members plus their children plus estimated regular non-member participants affiliated with a specific congregation (not self-identification)</td>
+</tr>
+<tr>
+<td><strong>Adherence rate</strong></td>
+<td>Adherents per 1,000 residents (2010 county population)</td>
+</tr>
+</tbody>
+</table>
+<p>RCMS adherent counts reflect <strong>religious affiliation with congregations</strong>, not survey
+self-identification. A person may identify with a faith tradition without being counted
+as an adherent if they do not participate in a counted congregation.</p>
+<hr />
+<h2 id="data-sources">Data sources</h2>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Provider / endpoint</th>
+<th>Level &amp; window</th>
+<th>Used in explorer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RCMS 2010 county file</td>
+<td><a href="https://www.thearda.com/data-archive?fid=RCMSCY10">ARDA <code>RCMSCY10</code></a></td>
+<td>County, 2010</td>
+<td><strong>Yes</strong> — primary layer</td>
+</tr>
+<tr>
+<td>US Religion Census</td>
+<td><a href="https://www.usreligioncensus.org/">usreligioncensus.org</a></td>
+<td>County, 2010 &amp; 2020</td>
+<td>Source documentation</td>
+</tr>
+<tr>
+<td>2010 Census population</td>
+<td>County <code>POP2010</code> in RCMS file</td>
+<td>County denominators</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr>
+<td>RCMS 2020 county file</td>
+<td>ARDA <code>RCMSCY20</code> (372 groups)</td>
+<td>County, 2020</td>
+<td>Future refresh via ARDA download</td>
+</tr>
+<tr>
+<td>USRC 2020 Group Detail</td>
+<td><code>2020_USRC_Group_Detail.xlsx</code> (Group by County)</td>
+<td>County, 2020</td>
+<td><strong>Yes</strong> — 2020 explorer year</td>
+</tr>
+</tbody>
+</table>
+<p>The repository build uses the cleaned county files in <code>data/religion_census/</code>. The
+original raw file was assembled via <code>build_religion_county_2010.py</code> from the ARDA /
+GitHub mirror county extract.</p>
+<p>Rebuild atlas assets:</p>
+<pre><code class="language-bash">python3 data/religion_census/build_religion_county_2020.py   # xlsx → CSV (when source changes)
+python3 scripts/build_religion_census_data.py
+python3 scripts/build_religion_census_documentation.py
+</code></pre>
+<hr />
+<h2 id="repository-files">Repository files</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Format</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>usa_religion_county_2010_wide.csv</code></td>
+<td>Wide CSV</td>
+<td>RCMS 2010 county file (one row per county)</td>
+</tr>
+<tr>
+<td><code>usa_religion_county_2010_long.csv</code></td>
+<td>Long CSV</td>
+<td>RCMS 2010 county × group tidy table</td>
+</tr>
+<tr>
+<td><code>usa_religion_2010_codebook.csv</code></td>
+<td>Codebook</td>
+<td>RCMS 2010 variable descriptions</td>
+</tr>
+<tr>
+<td><code>2020_USRC_Group_Detail.xlsx</code></td>
+<td>Excel</td>
+<td>USRC 2020 group detail (nation, state, county, metro)</td>
+</tr>
+<tr>
+<td><code>usa_religion_county_2020_wide.csv</code></td>
+<td>Wide CSV</td>
+<td>USRC 2020 county file (built from xlsx)</td>
+</tr>
+<tr>
+<td><code>usa_religion_county_2020_long.csv</code></td>
+<td>Long CSV</td>
+<td>USRC 2020 county × group tidy table</td>
+</tr>
+<tr>
+<td><code>usa_religion_2020_codebook.csv</code></td>
+<td>Codebook</td>
+<td>USRC 2020 variable descriptions</td>
+</tr>
+<tr>
+<td><code>build_religion_county_2010.py</code></td>
+<td>Python</td>
+<td>Rebuild 2010 wide/long/codebook from RCMS extract</td>
+</tr>
+<tr>
+<td><code>build_religion_county_2020.py</code></td>
+<td>Python</td>
+<td>Rebuild 2020 wide/long/codebook from USRC xlsx</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2020-usrc-county-schema">2020 USRC county schema</h2>
+<p>The 2020 layer is built from the <strong>2020 Group by County</strong> sheet in
+<code>2020_USRC_Group_Detail.xlsx</code>. Group codes are normalized to lowercase strings
+(zero-padded numerics, e.g. <code>081</code> for Catholic Church, <code>151</code> for LDS).</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fips</code></td>
+<td>string(5)</td>
+<td>County FIPS</td>
+</tr>
+<tr>
+<td><code>county</code></td>
+<td>string</td>
+<td>County name</td>
+</tr>
+<tr>
+<td><code>state_abbr</code></td>
+<td>string</td>
+<td>State abbreviation (derived from FIPS)</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>string</td>
+<td>State name</td>
+</tr>
+<tr>
+<td><code>population_2020</code></td>
+<td>float</td>
+<td>County population estimated from adherent share of population</td>
+</tr>
+<tr>
+<td><code>group_code</code></td>
+<td>string</td>
+<td>USRC group code</td>
+</tr>
+<tr>
+<td><code>group_name</code></td>
+<td>string</td>
+<td>Denomination label</td>
+</tr>
+<tr>
+<td><code>congregations</code></td>
+<td>float</td>
+<td>Congregation count</td>
+</tr>
+<tr>
+<td><code>adherents</code></td>
+<td>float</td>
+<td>Adherent count</td>
+</tr>
+<tr>
+<td><code>rate_per_1000</code></td>
+<td>float</td>
+<td>Adherence rate per 1,000 population</td>
+</tr>
+</tbody>
+</table>
+<p>County <strong>totals</strong> (<code>tot</code>) sum all reported denominations per county. Unlike 2010,
+the 2020 release does not include pre-aggregated tradition families (Evangelical,
+Mainline, etc.) in the Group Detail file.</p>
+<hr />
+<h2 id="ten-dominant-groups">Ten dominant groups</h2>
+<p>The explorer includes a <strong>Group catalog → 10 dominant groups</strong> view that aggregates
+county adherents and congregations into ten major U.S. religious traditions:</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Group</th>
+<th>Share (approx.)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dom_evan</code></td>
+<td>Evangelical Protestants</td>
+<td>~23% of adults</td>
+</tr>
+<tr>
+<td><code>dom_cath</code></td>
+<td>Roman Catholics</td>
+<td>~19–22% of adults</td>
+</tr>
+<tr>
+<td><code>dom_mprt</code></td>
+<td>Mainline Protestants</td>
+<td>~11% of adults</td>
+</tr>
+<tr>
+<td><code>dom_bprt</code></td>
+<td>Historically Black Protestants</td>
+<td>~5% of adults</td>
+</tr>
+<tr>
+<td><code>dom_lds</code></td>
+<td>Church of Jesus Christ of Latter-day Saints (LDS)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>dom_judaism</code></td>
+<td>Judaism</td>
+<td>~2% of adults</td>
+</tr>
+<tr>
+<td><code>dom_islam</code></td>
+<td>Islam</td>
+<td>~1% of adults</td>
+</tr>
+<tr>
+<td><code>dom_hindu</code></td>
+<td>Hinduism</td>
+<td>~1% of adults</td>
+</tr>
+<tr>
+<td><code>dom_buddhist</code></td>
+<td>Buddhism</td>
+<td>~1% of adults</td>
+</tr>
+<tr>
+<td><code>dom_orthodox</code></td>
+<td>Orthodox Christians</td>
+<td>~1% of adults</td>
+</tr>
+</tbody>
+</table>
+<p><strong>2010 (RCMS):</strong> uses tradition-family aggregates where available (<code>evan</code>, <code>cath</code>,
+<code>mprt</code>, <code>bprt</code>, <code>lds</code>, <code>orth</code>) and bundles Jewish, Muslim, Hindu, and Buddhist
+denominations from the codebook.</p>
+<p><strong>2020 (USRC):</strong> maps each of the 372 denomination codes to a dominant group using
+name-based rules and manual overrides (<code>data/religion_census/dominant_groups.py</code>).
+Unclassified denominations are excluded from these ten sums.</p>
+<hr />
+<h2 id="wide-file-schema-2010">Wide file schema (2010)</h2>
+<p>Geography columns:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fips</code></td>
+<td>string(5)</td>
+<td>County FIPS, zero-padded</td>
+</tr>
+<tr>
+<td><code>stcode</code></td>
+<td>int</td>
+<td>State FIPS code</td>
+</tr>
+<tr>
+<td><code>state_abbr</code></td>
+<td>string</td>
+<td>Two-letter state abbreviation</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>string</td>
+<td>State name</td>
+</tr>
+<tr>
+<td><code>cntycode</code></td>
+<td>int</td>
+<td>County code within state</td>
+</tr>
+<tr>
+<td><code>county</code></td>
+<td>string</td>
+<td>County name</td>
+</tr>
+<tr>
+<td><code>population_2010</code></td>
+<td>float</td>
+<td>2010 Census county population</td>
+</tr>
+</tbody>
+</table>
+<p>Religion columns follow <code>{group_code}{suffix}</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Suffix</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cng</code></td>
+<td>Total congregations</td>
+</tr>
+<tr>
+<td><code>adh</code></td>
+<td>Total adherents</td>
+</tr>
+<tr>
+<td><code>rate</code></td>
+<td>Adherence rate per 1,000 population</td>
+</tr>
+</tbody>
+</table>
+<h3>Major tradition aggregates</h3>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Tradition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tot</code></td>
+<td>All religious groups (national RCMS total)</td>
+</tr>
+<tr>
+<td><code>evan</code></td>
+<td>Evangelical Protestant</td>
+</tr>
+<tr>
+<td><code>mprt</code></td>
+<td>Mainline Protestant</td>
+</tr>
+<tr>
+<td><code>bprt</code></td>
+<td>Black Protestant</td>
+</tr>
+<tr>
+<td><code>cath</code></td>
+<td>Catholic</td>
+</tr>
+<tr>
+<td><code>orth</code></td>
+<td>Orthodox</td>
+</tr>
+<tr>
+<td><code>oth</code></td>
+<td>Other</td>
+</tr>
+</tbody>
+</table>
+<p>Individual denomination codes (e.g. <code>lds</code>, <code>umc</code>, <code>ag</code>) appear alongside these
+family totals. See <code>usa_religion_2010_codebook.csv</code> for full labels.</p>
+<hr />
+<h2 id="long-file-schema">Long file schema</h2>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fips</code></td>
+<td>string(5)</td>
+<td>County FIPS</td>
+</tr>
+<tr>
+<td><code>county</code></td>
+<td>string</td>
+<td>County name</td>
+</tr>
+<tr>
+<td><code>state_abbr</code></td>
+<td>string</td>
+<td>State abbreviation</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>string</td>
+<td>State name</td>
+</tr>
+<tr>
+<td><code>population_2010</code></td>
+<td>float</td>
+<td>2010 county population</td>
+</tr>
+<tr>
+<td><code>group_code</code></td>
+<td>string</td>
+<td>RCMS group code (lowercase)</td>
+</tr>
+<tr>
+<td><code>group_name</code></td>
+<td>string</td>
+<td>Denomination or tradition label</td>
+</tr>
+<tr>
+<td><code>congregations</code></td>
+<td>float</td>
+<td>Congregation count (nullable)</td>
+</tr>
+<tr>
+<td><code>adherents</code></td>
+<td>float</td>
+<td>Adherent count (nullable)</td>
+</tr>
+<tr>
+<td><code>rate_per_1000</code></td>
+<td>float</td>
+<td>Adherence rate (nullable)</td>
+</tr>
+</tbody>
+</table>
+<p>Rows are retained only where a group has at least one non-null congregation or
+adherent value in the county.</p>
+<hr />
+<h2 id="atlas-explorer-schema">Atlas explorer schema</h2>
+<p>The interactive page loads <code>assets/religion_census_data.js</code> (<code>window.RELIGION_CENSUS</code>).
+SQL tables exposed to AlaSQL:</p>
+<h3><code>religion_counties</code></h3>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>year</code></td>
+<td>Fixed at 2010</td>
+</tr>
+<tr>
+<td><code>fips</code></td>
+<td>County FIPS</td>
+</tr>
+<tr>
+<td><code>county</code></td>
+<td>County name</td>
+</tr>
+<tr>
+<td><code>state_abbr</code></td>
+<td>State abbreviation</td>
+</tr>
+<tr>
+<td><code>population_2010</code></td>
+<td>2010 Census population</td>
+</tr>
+<tr>
+<td><code>group_code</code></td>
+<td>Selected religious group code</td>
+</tr>
+<tr>
+<td><code>group_label</code></td>
+<td>Human-readable group name</td>
+</tr>
+<tr>
+<td><code>metric</code></td>
+<td><code>adherents</code>, <code>congregations</code>, or <code>rate</code></td>
+</tr>
+<tr>
+<td><code>metric_label</code></td>
+<td>Display label for metric</td>
+</tr>
+<tr>
+<td><code>val</code></td>
+<td>Numeric value for map/table</td>
+</tr>
+<tr>
+<td><code>unit</code></td>
+<td>persons, congregations, or per 1,000 pop</td>
+</tr>
+</tbody>
+</table>
+<h3><code>religion_states</code></h3>
+<p>Same columns except <code>fips</code> and <code>county</code> are omitted. State <strong>rates</strong> are recomputed
+at build time as <code>sum(adherents) / sum(population_2010) × 1,000</code> for the selected group.</p>
+<hr />
+<h2 id="coverage-and-limitations">Coverage and limitations</h2>
+<ul>
+<li><strong>Single-year snapshots:</strong> 2010 and 2020 are separate cross-sections (no time series).</li>
+<li><strong>Group codes differ by year:</strong> 2010 uses short RCMS codes (<code>cath</code>, <code>lds</code>); 2020 uses USRC numeric/alphanumeric codes (<code>081</code>, <code>151</code>).</li>
+<li><strong>2020 totals:</strong> <code>tot</code> is the sum of reported county denominations, not a separately reported USRC total row.</li>
+<li><strong>Undercounting:</strong> RCMS does not capture all religious participation (home churches,
+  non-affiliated spirituality, groups that do not report).</li>
+<li><strong>Double counting:</strong> Tradition family totals (<code>evan</code>, <code>mprt</code>, etc.) are aggregates;
+  do not sum families with <code>tot</code> or with individual denominations.</li>
+<li><strong>Missing values:</strong> Some groups report congregations only, or are absent in sparse
+  counties; nulls are preserved.</li>
+<li><strong>2020 refresh:</strong> Additional ARDA <code>RCMSCY20</code> fields can supplement the USRC xlsx when available.</li>
+</ul>
+<hr />
+<h2 id="example-sql-explorer">Example SQL (explorer)</h2>
+<p>Top counties by total adherents:</p>
+<pre><code class="language-sql">SELECT fips, county, state_abbr, val, unit
+FROM religion_counties
+WHERE group_code = 'tot' AND metric = 'adherents'
+ORDER BY val DESC
+LIMIT 25
+</code></pre>
+<p>Catholic adherence rate by state:</p>
+<pre><code class="language-sql">SELECT state_abbr, val, unit
+FROM religion_states
+WHERE group_code = 'cath' AND metric = 'rate'
+ORDER BY val DESC
+</code></pre>
+<p>Counties with highest Evangelical Protestant adherents in Texas:</p>
+<pre><code class="language-sql">SELECT fips, county, state_abbr, val, unit
+FROM religion_counties
+WHERE state_abbr = 'TX' AND group_code = 'evan' AND metric = 'adherents'
+ORDER BY val DESC
+LIMIT 20
+</code></pre>
+<hr />
+<h2 id="citations">Citations</h2>
+<p>Association of Religion Data Archives (ARDA). <em>Religious Congregations &amp; Membership
+Study, 2010: County File.</em> Retrieved from
+<a href="https://www.thearda.com/data-archive?fid=RCMSCY10">https://www.thearda.com/data-archive?fid=RCMSCY10</a>.</p>
+<p>U.S. Religion Census. <em>Religious Congregations &amp; Membership Study.</em> Retrieved from
+<a href="https://www.usreligioncensus.org/">https://www.usreligioncensus.org/</a>.</p></article>
+    </main>
+  </div>
+
+  <footer class="footer">
+  Generated from <code>data/religion_census/Religion_Census_Data.md</code>.
+  County religion data from the Religious Congregations &amp; Membership Study (RCMS) 2010.
+  </footer>
+</body>
+</html>

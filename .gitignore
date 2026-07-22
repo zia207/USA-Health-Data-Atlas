@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Large raw datasets (dashboard uses bundled assets/*.js)
+data/*
+!data/county_health_ranking/
+data/county_health_ranking/*
+!data/county_health_ranking/chr_county_*.csv
+data/county_health_ranking/chr_county_panel_*.csv
+
+# Local development
+notebooks/
+Health_anlytics/
+*.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

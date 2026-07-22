@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>CHR County Data 2023 · USA-Health Data Atlas</title>
+<style>
+:root {
+  --ink: #0b1f2a; --panel: #ffffff; --rail: #0e3a4f; --accent: #1d7a8c;
+  --paper: #e8eef1; --hair: #c5d0d6; --steel: #5a6e78; --lake: #14707e;
+  --focus: #0e4f8b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--paper); color: var(--ink); line-height: 1.55;
+}
+a { color: var(--lake); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.banner {
+  background: linear-gradient(90deg, #071821 0%, #0e3a4f 55%, #14586f 100%);
+  color: #e8f2f5; border-bottom: 4px solid var(--accent);
+}
+.banner-inner { max-width: 1180px; margin: 0 auto; padding: 18px 20px 20px; }
+.banner-top { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.banner-copy { min-width: 0; flex: 1; }
+.banner-aside { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.banner-logo {
+  display: block; width: clamp(72px, 12vw, 110px); height: auto;
+  background: #fff; border-radius: 10px; padding: 5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+.explorer-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 520px; }
+.explorer-nav a {
+  display: inline-block; background: rgba(255,255,255,.08); color: #e8f2f5;
+  text-decoration: none; border: 1px solid rgba(255,255,255,.22);
+  padding: 6px 10px; font-size: 12px; white-space: nowrap;
+}
+.explorer-nav a:hover { background: rgba(255,255,255,.14); }
+.explorer-nav a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.eyebrow {
+  font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+  letter-spacing: .14em; text-transform: uppercase; color: #8fb6bd;
+}
+h1.page-title { margin: 8px 0 6px; font-size: clamp(26px, 3.5vw, 38px); line-height: 1.08; font-weight: 750; }
+h1.page-title span { color: #7fcad4; }
+.sub { color: #b9c9ce; font-size: 14px; max-width: 820px; }
+.layout {
+  max-width: 1180px; margin: 0 auto; padding: 14px 16px 48px;
+  display: grid; grid-template-columns: 240px 1fr; gap: 18px;
+}
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.toc {
+  position: sticky; top: 12px; align-self: start;
+  background: var(--panel); border: 1px solid var(--hair); padding: 14px;
+}
+@media (max-width: 900px) { .toc { position: static; } }
+.toc h2 {
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--steel); margin: 0 0 10px; font-family: ui-monospace, Consolas, monospace;
+}
+.toc ul { list-style: none; }
+.toc li { margin-bottom: 6px; }
+.toc a { text-decoration: none; font-size: 13px; color: var(--rail); font-weight: 600; }
+.toc a:hover { color: var(--accent); }
+.year-nav { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--hair); }
+.year-nav h3 {
+  font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--steel); margin: 0 0 8px; font-family: ui-monospace, Consolas, monospace;
+}
+.year-nav a {
+  display: inline-block; margin: 0 6px 6px 0; font-size: 12px; font-weight: 600;
+  text-decoration: none; color: var(--rail); border: 1px solid var(--hair); padding: 3px 8px;
+}
+.year-nav a.active { background: var(--rail); color: #fff; border-color: var(--rail); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.btn {
+  display: inline-block; background: var(--rail); color: #fff; text-decoration: none;
+  padding: 8px 12px; font-size: 13px; font-weight: 650;
+}
+.btn:hover { background: var(--accent); }
+.btn.ghost { background: transparent; color: var(--rail); border: 1px solid var(--hair); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.content { min-width: 0; }
+.doc-section {
+  background: var(--panel); border: 1px solid var(--hair); padding: 20px 22px 28px;
+  margin-bottom: 16px;
+}
+.doc-section h1 { font-size: 1.45rem; margin: 0 0 .6em; line-height: 1.2; }
+.doc-section h2 {
+  font-size: 1.15rem; margin: 1.4em 0 .45em; padding-bottom: 4px;
+  border-bottom: 1px solid var(--hair); line-height: 1.25;
+}
+.doc-section h3 { font-size: 1rem; margin: 1.1em 0 .35em; }
+.doc-section p, .doc-section ul, .doc-section ol { margin: .55em 0; }
+.doc-section li { margin: .2em 0 .2em 1.2em; }
+.doc-section table {
+  width: 100%; border-collapse: collapse; font-size: 13px; margin: .8em 0;
+}
+.doc-section th, .doc-section td {
+  border: 1px solid var(--hair); padding: 7px 9px; text-align: left; vertical-align: top;
+}
+.doc-section th { background: #0e3a4f; color: #fff; font-weight: 600; }
+.doc-section tr:nth-child(even) td { background: #f4f8f8; }
+.doc-section code {
+  font-family: ui-monospace, Consolas, monospace; font-size: .9em;
+  background: #eef5f7; padding: 1px 4px;
+}
+.doc-section pre {
+  background: #14262e; color: #b9e0e6; padding: 12px 14px; overflow: auto;
+  font-size: 12px; line-height: 1.45; margin: .8em 0;
+}
+.doc-section pre code { background: transparent; padding: 0; color: inherit; }
+.doc-section hr { border: none; border-top: 1px solid var(--hair); margin: 1.5em 0; }
+.footer {
+  max-width: 1180px; margin: 0 auto; padding: 0 16px 36px;
+  font-size: 12px; color: var(--steel);
+}
+</style>
+</head>
+<body>
+  <header class="banner">
+    <div class="banner-inner">
+      <div class="banner-top">
+        <div class="banner-copy">
+          <div class="eyebrow">USA-Health Data Atlas · County Health Rankings</div>
+          <h1 class="page-title">CHR County Data <span>2023</span></h1>
+          <p class="sub">
+            Data dictionary and measure sources for the consolidated
+            <code>chr_county_2023.csv</code> file used in the County Health Rankings explorer.
+          </p>
+        </div>
+        <div class="banner-aside">
+          <img class="banner-logo" src="upatta_logo.png" alt="Upatta Data Analytics" width="110" height="110"/>
+          <nav class="explorer-nav" aria-label="Atlas navigation">
+            <a href="index.html">Home</a>
+            <a href="usa_county_health_rankings.html">CHR Explorer</a>
+            <a class="active" href="chr_documentation_2023.html" aria-current="page">Documentation</a>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="toc" aria-label="Table of contents">
+      <h2>On this page</h2>
+      <ul>
+        
+      </ul>
+      <div class="year-nav">
+        <h3>Other years</h3>
+        <a href="chr_documentation_2020.html">2020</a>
+        <a href="chr_documentation_2021.html">2021</a>
+        <a href="chr_documentation_2022.html">2022</a>
+        <a href="chr_documentation_2023.html" class="active">2023</a>
+        <a href="chr_documentation_2024.html">2024</a>
+        <a href="chr_documentation_2025.html">2025</a>
+      </div>
+      <div class="actions">
+        <a class="btn" href="usa_county_health_rankings.html">Open CHR Explorer</a>
+        <a class="btn ghost" href="https://www.countyhealthrankings.org/health-data/methodology-and-sources/data-documentation" target="_blank" rel="noopener">CHR official docs</a>
+        <a class="btn ghost" href="data/county_health_ranking/chr_county_2023.csv">Download CSV</a>
+      </div>
+    </aside>
+    <main class="content">
+      <article class="doc-section"><h1>CHR County Data — 2023</h1>
+<p>Consolidated county-level <strong>mean / primary value</strong> measures from the <a href="https://www.countyhealthrankings.org/health-data/methodology-and-sources/data-documentation">County Health Rankings 2023 release</a>.</p>
+<h2>Output file</h2>
+<ul>
+<li><code>chr_county_2023.csv</code> — one row per county; ranks from outcomes/subrankings sheets; primary measure values from ranked/select and additional measure sheets.</li>
+</ul>
+<h2>Introduction (from CHR release)</h2>
+<ul>
+<li>Unnamed: 0 Unnamed: 1 Unnamed: 2</li>
+<li>A program of the University of Wisconsin Population Health Institute</li>
+<li>This Excel file contains the rankings and data details for the measures used in the 2023 County Health Rankings.</li>
+<li>1) Outcomes and Factors Rankings--Ranks are all calculated and reported WITHIN states</li>
+<li>2) Outcomes and Factors SubRankings--Ranks are all calculated and reported WITHIN states</li>
+<li>3) Ranked Measure Data--The measures themselves are listed in bold.</li>
+<li>4) Ranked Measure Sources &amp; Years</li>
+<li>5) Additional Measure Data--These are supplemental measures reported on the Rankings web site but not used in calculating the rankings.</li>
+<li>6) Additional Measure Sources &amp; Years</li>
+<li>Measure Data Elements Description</li>
+<li>Geographic identifiers FIPS Federal Information Processing Standard</li>
+<li>State</li>
+<li>County</li>
+<li>Premature Death Unreliable Value reported but considered unreliable since based on counts of twenty or less.</li>
+<li>Deaths Number of deaths &lt;75</li>
+<li>Years of Potential Life Lost Rate Age-adjusted YPLL rate per 100,000</li>
+<li>95% CI - Low 95% confidence interval reported by National Center for Health Statistics</li>
+<li>95% CI - High</li>
+<li>Quartile Within-state rank: 1 = top quartile, 2=second quartile, 3= third quartile, 4=bottom quartile</li>
+<li>YPLL Rate (AIAN) Age-adjusted YPLL rate per 100,000 for non-Hispanic American Indian/Alaska Natives</li>
+<li>YPLL Rate (AIAN) 95% CI - Low 95% confidence interval</li>
+<li>YPLL Rate (AIAN) 95% CI - High</li>
+<li>YPLL Rate (AIAN) Unreliable</li>
+<li>YPLL Rate (Asian) Age-adjusted YPLL rate per 100,000 for non-Hispanic Asians</li>
+<li>YPLL Rate (Asian) 95% CI - Low 95% confidence interval</li>
+<li>… (231 more lines in source introduction)</li>
+</ul>
+<h2>Ranked / select measure sources</h2>
+<table>
+<thead>
+<tr>
+<th>Focus Area</th>
+<th>Measure</th>
+<th>Description</th>
+<th>Source</th>
+<th>Year(s)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Length of Life</td>
+<td>Premature Death*</td>
+<td>Years of potential life lost before age 75 per 100,000 population (age-adjusted).</td>
+<td>National Center for Health Statistics - Mortality Files</td>
+<td>2018-2020</td>
+</tr>
+<tr>
+<td>Quality of Life</td>
+<td>Poor or Fair Health</td>
+<td>Percentage of adults reporting fair or poor health (age-adjusted).</td>
+<td>Behavioral Risk Factor Surveillance System</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Poor Physical Health Days</td>
+<td>Average number of physically unhealthy days reported in past 30 days (age-adjusted).</td>
+<td>Behavioral Risk Factor Surveillance System</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Poor Mental Health Days</td>
+<td>Average number of mentally unhealthy days reported in past 30 days (age-adjusted).</td>
+<td>Behavioral Risk Factor Surveillance System</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Low Birthweight*</td>
+<td>Percentage of live births with low birthweight (&lt; 2,500 grams).</td>
+<td>National Center for Health Statistics - Natality files</td>
+<td>2014-2020</td>
+</tr>
+<tr>
+<td>Tobacco Use</td>
+<td>Adult Smoking</td>
+<td>Percentage of adults who are current smokers (age-adjusted).</td>
+<td>Behavioral Risk Factor Surveillance System</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>Diet and Exercise</td>
+<td>Adult Obesity</td>
+<td>Percentage of the adult population (age 18 and older) that reports a body mass index (BMI) greater than or equal to 30 k</td>
+<td>Behavioral Risk Factor Surveillance System</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Food Environment Index</td>
+<td>Index of factors that contribute to a healthy food environment, from 0 (worst) to 10 (best).</td>
+<td>USDA Food Environment Atlas; Map the Meal Gap from Feeding America</td>
+<td>2019 &amp; 2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Physical Inactivity</td>
+<td>Percentage of adults age 18 and over reporting no leisure-time physical activity (age-adjusted).</td>
+<td>Behavioral Risk Factor Surveillance System</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Access to Exercise Opportunities</td>
+<td>Percentage of population with adequate access to locations for physical activity.</td>
+<td>ArcGIS Business Analyst and Living Atlas of the World; YMCA; US Census TIGER/Line Shapefiles</td>
+<td>2022 &amp; 2020</td>
+</tr>
+<tr>
+<td>Alcohol and Drug Use</td>
+<td>Excessive Drinking</td>
+<td>Percentage of adults reporting binge or heavy drinking (age-adjusted).</td>
+<td>Behavioral Risk Factor Surveillance System</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Alcohol-Impaired Driving Deaths</td>
+<td>Percentage of driving deaths with alcohol involvement.</td>
+<td>Fatality Analysis Reporting System</td>
+<td>2016-2020</td>
+</tr>
+<tr>
+<td>Sexual Activity</td>
+<td>Sexually Transmitted Infections</td>
+<td>Number of newly diagnosed chlamydia cases per 100,000 population.</td>
+<td>National Center for HIV/AIDS, Viral Hepatitis, STD, and TB Prevention</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Teen Births*</td>
+<td>Number of births per 1,000 female population ages 15-19.</td>
+<td>National Center for Health Statistics - Natality files</td>
+<td>2014-2020</td>
+</tr>
+<tr>
+<td>Access to Care</td>
+<td>Uninsured</td>
+<td>Percentage of population under age 65 without health insurance.</td>
+<td>Small Area Health Insurance Estimates</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Primary Care Physicians</td>
+<td>Ratio of population to primary care physicians.</td>
+<td>Area Health Resource File/American Medical Association</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Dentists</td>
+<td>Ratio of population to dentists.</td>
+<td>Area Health Resource File/National Provider Identifier Downloadable File</td>
+<td>2021</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Mental Health Providers</td>
+<td>Ratio of population to mental health providers.</td>
+<td>CMS, National Provider Identification</td>
+<td>2022</td>
+</tr>
+<tr>
+<td>Quality of Care</td>
+<td>Preventable Hospital Stays*</td>
+<td>Rate of hospital stays for ambulatory-care sensitive conditions per 100,000 Medicare enrollees.</td>
+<td>Mapping Medicare Disparities Tool</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Mammography Screening*</td>
+<td>Percentage of female Medicare enrollees ages 65-74 that received an annual mammography screening.</td>
+<td>Mapping Medicare Disparities Tool</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Flu Vaccinations*</td>
+<td>Percentage of fee-for-service (FFS) Medicare enrollees that had an annual flu vaccination.</td>
+<td>Mapping Medicare Disparities Tool</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>Education</td>
+<td>High School Completion</td>
+<td>Percentage of adults ages 25 and over with a high school diploma or equivalent.</td>
+<td>American Community Survey, 5-year estimates</td>
+<td>2017-2021</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Some College</td>
+<td>Percentage of adults ages 25-44 with some post-secondary education.</td>
+<td>American Community Survey, 5-year estimates</td>
+<td>2017-2021</td>
+</tr>
+<tr>
+<td>Employment</td>
+<td>Unemployment</td>
+<td>Percentage of population ages 16 and older unemployed but seeking work.</td>
+<td>Bureau of Labor Statistics</td>
+<td>2021</td>
+</tr>
+<tr>
+<td>Income</td>
+<td>Children in Poverty*</td>
+<td>Percentage of people under age 18 in poverty.</td>
+<td>Small Area Income and Poverty Estimates</td>
+<td>2021</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Income Inequality</td>
+<td>Ratio of household income at the 80th percentile to income at the 20th percentile.</td>
+<td>American Community Survey, 5-year estimates</td>
+<td>2017-2021</td>
+</tr>
+<tr>
+<td>Family and Social Support</td>
+<td>Children in Single-Parent Households</td>
+<td>Percentage of children that live in a household headed by a single parent.</td>
+<td>American Community Survey, 5-year estimates</td>
+<td>2017-2021</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Social Associations</td>
+<td>Number of membership associations per 10,000 population.</td>
+<td>County Business Patterns</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>Community Safety</td>
+<td>Injury Deaths*</td>
+<td>Number of deaths due to injury per 100,000 population.</td>
+<td>National Center for Health Statistics - Mortality Files</td>
+<td>2016-2020</td>
+</tr>
+<tr>
+<td>Air and Water Quality</td>
+<td>Air Pollution - Particulate Matter</td>
+<td>Average daily density of fine particulate matter in micrograms per cubic meter (PM2.5).</td>
+<td>Environmental Public Health Tracking Network</td>
+<td>2019</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Drinking Water Violations+</td>
+<td>Indicator of the presence of health-related drinking water violations. 'Yes' indicates the presence of a violation, 'No'</td>
+<td>Safe Drinking Water Information System</td>
+<td>2021</td>
+</tr>
+<tr>
+<td>Housing and Transit</td>
+<td>Severe Housing Problems</td>
+<td>Percentage of households with at least 1 of 4 housing problems: overcrowding, high housing costs, lack of kitchen facili</td>
+<td>Comprehensive Housing Affordability Strategy (CHAS) data</td>
+<td>2015-2019</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Driving Alone to Work*</td>
+<td>Percentage of the workforce that drives alone to work.</td>
+<td>American Community Survey, 5-year estimates</td>
+<td>2017-2021</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Long Commute - Driving Alone</td>
+<td>Among workers who commute in their car alone, the percentage that commute more than 30 minutes.</td>
+<td>American Community Survey, 5-year estimates</td>
+<td>2017-2021</td>
+</tr>
+</tbody>
+</table>
+<h2>Additional measure sources</h2>
+<table>
+<thead>
+<tr>
+<th>Focus Area</th>
+<th>Measure</th>
+<th>Description</th>
+<th>Source</th>
+<th>Year(s)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HEALTH OUTCOMES</td>
+<td>nan</td>
+<td>nan</td>
+<td>nan</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>Length of Life</td>
+<td>Life Expectancy*</td>
+<td>Average number of years a person can expect to live.</td>
+<td>National Center for Health Statistics - Mortality Files</td>
+<td>2018-2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Premature Age-Adjusted Mortality*</td>
+<td>Number of deaths among residents under age 75 per 100,000 population (age-adjusted).</td>
+<td>National Center for Health Statistics - Mortality Files</td>
+<td>2018-2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Child Mortality*</td>
+<td>Number of deaths among residents under age 18 per 100,000 population.</td>
+<td>National Center for Health Statistics - Mortality Files</td>
+<td>2017-2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Infant Mortality*</td>
+<td>Number of infant deaths (within 1 year) per 1,000 live births.</td>
+<td>National Center for Health Statistics - Mortality Files</td>
+<td>2014-2020</td>
+</tr>
+<tr>
+<td>Quality of Life</td>
+<td>Frequent Physical Distress</td>
+<td>Percentage of adults reporting 14 or more days of poor physical health per month (age-adjusted).</td>
+<td>Behavioral Risk Factor Surveillance System</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Frequent Mental Distress</td>
+<td>Percentage of adults reporting 14 or more days of poor mental health per month (age-adjusted).</td>
+<td>Behavioral Risk Factor Surveillance System</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Diabetes Prevalence</td>
+<td>Percentage of adults aged 20 and above with diagnosed diabetes (age-adjusted).</td>
+<td>Behavioral Risk Factor Surveillance System</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>HIV Prevalence+</td>
+<td>Number of people aged 13 years and older living with a diagnosis of human immunodeficiency virus (HIV) infection per 100,000 population.</td>
+<td>National Center for HIV/AIDS, Viral Hepatitis, STD, and TB Prevention</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>HEALTH FACTORS</td>
+<td>nan</td>
+<td>nan</td>
+<td>nan</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>HEALTH BEHAVIORS</td>
+<td>nan</td>
+<td>nan</td>
+<td>nan</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>Diet and Exercise</td>
+<td>Food Insecurity</td>
+<td>Percentage of population who lack adequate access to food.</td>
+<td>Map the Meal Gap</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Limited Access to Healthy Foods</td>
+<td>Percentage of population who are low-income and do not live close to a grocery store.</td>
+<td>USDA Food Environment Atlas</td>
+<td>2019</td>
+</tr>
+<tr>
+<td>Alcohol and Drug Use</td>
+<td>Drug Overdose Deaths*</td>
+<td>Number of drug poisoning deaths per 100,000 population.</td>
+<td>National Center for Health Statistics - Mortality Files</td>
+<td>2018-2020</td>
+</tr>
+<tr>
+<td>Other Health Behaviors</td>
+<td>Insufficient Sleep</td>
+<td>Percentage of adults who report fewer than 7 hours of sleep on average (age-adjusted).</td>
+<td>Behavioral Risk Factor Surveillance System</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>CLINICAL CARE</td>
+<td>nan</td>
+<td>nan</td>
+<td>nan</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>Access to Care</td>
+<td>Uninsured Adults</td>
+<td>Percentage of adults under age 65 without health insurance.</td>
+<td>Small Area Health Insurance Estimates</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Uninsured Children</td>
+<td>Percentage of children under age 19 without health insurance.</td>
+<td>Small Area Health Insurance Estimates</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Other Primary Care Providers</td>
+<td>Ratio of population to primary care providers other than physicians.</td>
+<td>CMS, National Provider Identification</td>
+<td>2022</td>
+</tr>
+<tr>
+<td>SOCIAL &amp; ECONOMIC FACTORS</td>
+<td>nan</td>
+<td>nan</td>
+<td>nan</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>Education</td>
+<td>High School Graduation+</td>
+<td>Percentage of ninth-grade cohort that graduates in four years.</td>
+<td>EDFacts</td>
+<td>2019-2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Disconnected Youth</td>
+<td>Percentage of teens and young adults ages 16-19 who are neither working nor in school.</td>
+<td>American Community Survey, 5-year estimates</td>
+<td>2017-2021</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Reading Scores*+</td>
+<td>Average grade level performance for 3rd graders on English Language Arts standardized tests.</td>
+<td>Stanford Education Data Archive</td>
+<td>2018</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Math Scores*+</td>
+<td>Average grade level performance for 3rd graders on math standardized tests.</td>
+<td>Stanford Education Data Archive</td>
+<td>2018</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>School Segregation</td>
+<td>The extent to which students within different race and ethnicity groups are unevenly distributed across schools when compared with the racial and ethnic composition of the local population. The index ranges from 0 to 1 with lower values representing a school composition that approximates race and ethnicity distributions in the student populations within the county, and higher values representing more segregation.</td>
+<td>National Center for Education Statistics</td>
+<td>2021-2022</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>School Funding Adequacy+</td>
+<td>The average gap in dollars between actual and required spending per pupil among public school districts. Required spending is an estimate of dollars needed to achieve U.S. average test scores in each district.</td>
+<td>School Finance Indicators Database</td>
+<td>2020</td>
+</tr>
+<tr>
+<td>Income</td>
+<td>Gender Pay Gap</td>
+<td>Ratio of women's median earnings to men's median earnings for all full-time, year-round workers, presented as "cents on the dollar."</td>
+<td>American Community Survey, 5-year estimates</td>
+<td>2017-2021</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Median Household Income*</td>
+<td>The income where half of households in a county earn more and half of households earn less.</td>
+<td>Small Area Income and Poverty Estimates</td>
+<td>2021</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Living Wage</td>
+<td>The hourly wage needed to cover basic household expenses plus all relevant taxes for a household of one adult and two children.</td>
+<td>The Living Wage Calculator</td>
+<td>2022</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Children Eligible for Free or Reduced Price Lunch+</td>
+<td>Percentage of children enrolled in public schools that are eligible for free or reduced price lunch.</td>
+<td>National Center for Education Statistics</td>
+<td>2020-2021</td>
+</tr>
+<tr>
+<td>Family and Social Support</td>
+<td>Residential Segregation - Black/White</td>
+<td>Index of dissimilarity where higher values indicate greater residential segregation between Black and white county residents.</td>
+<td>American Community Survey, 5-year estimates</td>
+<td>2017-2021</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Child Care Cost Burden</td>
+<td>Child care costs for a household with two children as a percent of median household income.</td>
+<td>The Living Wage Calculator; Small Area Income and Poverty Estimates</td>
+<td>2022 &amp; 2021</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Child Care Centers</td>
+<td>Number of child care centers per 1,000 population under 5 years old.</td>
+<td>Homeland Infrastructure Foundation-Level Data (HIFLD)</td>
+<td>2010-2022</td>
+</tr>
+<tr>
+<td>Community Safety</td>
+<td>Homicides*</td>
+<td>Number of deaths due to homicide per 100,000 population.</td>
+<td>National Center for Health Statistics - Mortality Files</td>
+<td>2014-2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Suicides*</td>
+<td>Number of deaths due to suicide per 100,000 population (age-adjusted).</td>
+<td>National Center for Health Statistics - Mortality Files</td>
+<td>2016-2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Firearm Fatalities*</td>
+<td>Number of deaths due to firearms per 100,000 population.</td>
+<td>National Center for Health Statistics - Mortality Files</td>
+<td>2016-2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Motor Vehicle Crash Deaths*</td>
+<td>Number of motor vehicle crash deaths per 100,000 population.</td>
+<td>National Center for Health Statistics - Mortality Files</td>
+<td>2014-2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Juvenile Arrests+</td>
+<td>Rate of delinquency cases per 1,000 juveniles.</td>
+<td>Easy Access to State and County Juvenile Court Case Counts</td>
+<td>2019</td>
+</tr>
+<tr>
+<td>Other Social &amp; Economic Factors</td>
+<td>Voter Turnout+</td>
+<td>Percentage of citizen population aged 18 or older who voted in the 2020 U.S. Presidential election.</td>
+<td>MIT Election Data and Science Lab; American Community Survey, 5-year estimates</td>
+<td>2020 &amp; 2016-2020</td>
+</tr>
+<tr>
+<td>nan</td>
+<td>Census Participation</td>
+<td>Percentage of all households that self-responded to the 2020 census (by internet, paper questionnaire or telephone).</td>
+<td>Census Operational Quality Metrics</td>
+<td>2020</td>
+</tr>
+</tbody>
+</table>
+<p><em>… 20 more rows in source file.</em></p>
+<h2>Processing notes</h2>
+<ul>
+<li>Merged sheets: outcomes/rankings, subrankings (2020–2023), ranked or select measure data, additional measure data.</li>
+<li>Excluded auxiliary fields: 95% CI, quartiles, unreliable flags, z-scores (measure sheets).</li>
+<li>Overlapping columns across sheets are collapsed with the <strong>arithmetic mean</strong> when both values exist.</li>
+<li>Duplicate column names within a sheet are suffixed (<code>_1</code>, <code>_2</code>, …).</li>
+</ul>
+<h2>Column dictionary</h2>
+<p>Standardized column names and display labels for <code>chr_county_2023.csv</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Label</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>20th_percentile_income</code></td>
+<td>20th Percentile Income</td>
+</tr>
+<tr>
+<td><code>65_and_older_65_and_over</code></td>
+<td>65 and Older 65 and Over</td>
+</tr>
+<tr>
+<td><code>access_to_exercise_opportunities_pct</code></td>
+<td>Access to Exercise Opportunities (%)</td>
+</tr>
+<tr>
+<td><code>adult_obesity_pct</code></td>
+<td>Adult Obesity (%)</td>
+</tr>
+<tr>
+<td><code>adult_smoking_pct</code></td>
+<td>Adult Smoking (%)</td>
+</tr>
+<tr>
+<td><code>age_adjusted_death_rate</code></td>
+<td>Age Adjusted Death Rate</td>
+</tr>
+<tr>
+<td><code>age_adjusted_mortality_aian</code></td>
+<td>Age Adjusted Mortality AIAN</td>
+</tr>
+<tr>
+<td><code>age_adjusted_mortality_asian</code></td>
+<td>Age Adjusted Mortality Asian</td>
+</tr>
+<tr>
+<td><code>age_adjusted_mortality_black</code></td>
+<td>Age Adjusted Mortality Black</td>
+</tr>
+<tr>
+<td><code>age_adjusted_mortality_hispanic</code></td>
+<td>Age Adjusted Mortality Hispanic</td>
+</tr>
+<tr>
+<td><code>age_adjusted_mortality_white</code></td>
+<td>Age Adjusted Mortality White</td>
+</tr>
+<tr>
+<td><code>air_pollution_particulate_matter_average_daily_pm2_5</code></td>
+<td>Air Pollution Particulate Matter Average Daily PM2.5</td>
+</tr>
+<tr>
+<td><code>alcohol_impaired_driving_deaths</code></td>
+<td>Alcohol Impaired Driving Deaths</td>
+</tr>
+<tr>
+<td><code>alcohol_involved_driving_death_pct</code></td>
+<td>Alcohol Involved Driving Death (%)</td>
+</tr>
+<tr>
+<td><code>asian</code></td>
+<td>Asian</td>
+</tr>
+<tr>
+<td><code>average_grade_performance_asian</code></td>
+<td>Average Grade Performance Asian</td>
+</tr>
+<tr>
+<td><code>average_grade_performance_asian_1</code></td>
+<td>Average Grade Performance Asian 1</td>
+</tr>
+<tr>
+<td><code>average_grade_performance_black</code></td>
+<td>Average Grade Performance Black</td>
+</tr>
+<tr>
+<td><code>average_grade_performance_black_1</code></td>
+<td>Average Grade Performance Black 1</td>
+</tr>
+<tr>
+<td><code>average_grade_performance_hispanic</code></td>
+<td>Average Grade Performance Hispanic</td>
+</tr>
+<tr>
+<td><code>average_grade_performance_hispanic_1</code></td>
+<td>Average Grade Performance Hispanic 1</td>
+</tr>
+<tr>
+<td><code>average_grade_performance_white</code></td>
+<td>Average Grade Performance White</td>
+</tr>
+<tr>
+<td><code>average_grade_performance_white_1</code></td>
+<td>Average Grade Performance White 1</td>
+</tr>
+<tr>
+<td><code>black</code></td>
+<td>Black</td>
+</tr>
+<tr>
+<td><code>broadband_access_pct</code></td>
+<td>Broadband Access (%)</td>
+</tr>
+<tr>
+<td><code>census_participation</code></td>
+<td>Census Participation</td>
+</tr>
+<tr>
+<td><code>child_care_centers</code></td>
+<td>Child Care Centers</td>
+</tr>
+<tr>
+<td><code>child_care_centers_per_1_000_children</code></td>
+<td>Child Care Centers per 1 000 Children</td>
+</tr>
+<tr>
+<td><code>child_mortality_count</code></td>
+<td>Child Mortality (count)</td>
+</tr>
+<tr>
+<td><code>child_mortality_rate</code></td>
+<td>Child Mortality Rate</td>
+</tr>
+<tr>
+<td><code>child_mortality_rate_aian</code></td>
+<td>Child Mortality Rate AIAN</td>
+</tr>
+<tr>
+<td><code>child_mortality_rate_asian</code></td>
+<td>Child Mortality Rate Asian</td>
+</tr>
+<tr>
+<td><code>child_mortality_rate_black</code></td>
+<td>Child Mortality Rate Black</td>
+</tr>
+<tr>
+<td><code>child_mortality_rate_hispanic</code></td>
+<td>Child Mortality Rate Hispanic</td>
+</tr>
+<tr>
+<td><code>child_mortality_rate_white</code></td>
+<td>Child Mortality Rate White</td>
+</tr>
+<tr>
+<td><code>childcare_cost_burden_pct</code></td>
+<td>Childcare Cost Burden (%)</td>
+</tr>
+<tr>
+<td><code>children_in_households</code></td>
+<td>Children in Households</td>
+</tr>
+<tr>
+<td><code>children_in_poverty</code></td>
+<td>Children in Poverty</td>
+</tr>
+<tr>
+<td><code>children_in_poverty_aian</code></td>
+<td>Children in Poverty AIAN</td>
+</tr>
+<tr>
+<td><code>children_in_poverty_asian</code></td>
+<td>Children in Poverty Asian</td>
+</tr>
+<tr>
+<td><code>children_in_poverty_black</code></td>
+<td>Children in Poverty Black</td>
+</tr>
+<tr>
+<td><code>children_in_poverty_hispanic</code></td>
+<td>Children in Poverty Hispanic</td>
+</tr>
+<tr>
+<td><code>children_in_poverty_white</code></td>
+<td>Children in Poverty White</td>
+</tr>
+<tr>
+<td><code>children_in_single_parent_households</code></td>
+<td>Children in Single Parent Households</td>
+</tr>
+<tr>
+<td><code>chlamydia_case_count</code></td>
+<td>Chlamydia Case (count)</td>
+</tr>
+<tr>
+<td><code>chlamydia_rate</code></td>
+<td>Chlamydia Rate</td>
+</tr>
+<tr>
+<td><code>clinical_care_rank</code></td>
+<td>Clinical Care Rank</td>
+</tr>
+<tr>
+<td><code>completed_high_school</code></td>
+<td>Completed High School</td>
+</tr>
+<tr>
+<td><code>crude_rate</code></td>
+<td>Crude Rate</td>
+</tr>
+<tr>
+<td><code>deaths</code></td>
+<td>Deaths</td>
+</tr>
+<tr>
+<td><code>denominator</code></td>
+<td>Denominator</td>
+</tr>
+<tr>
+<td><code>dentist_rate</code></td>
+<td>Dentist Rate</td>
+</tr>
+<tr>
+<td><code>dentists</code></td>
+<td>Dentists</td>
+</tr>
+<tr>
+<td><code>diabetes_prevalence_adults_with_diabetes</code></td>
+<td>Diabetes Prevalence Adults with Diabetes</td>
+</tr>
+<tr>
+<td><code>disconnected_youth</code></td>
+<td>Disconnected Youth</td>
+</tr>
+<tr>
+<td><code>drive_alone_aian</code></td>
+<td>Drive Alone AIAN</td>
+</tr>
+<tr>
+<td><code>drive_alone_asian</code></td>
+<td>Drive Alone Asian</td>
+</tr>
+<tr>
+<td><code>drive_alone_black</code></td>
+<td>Drive Alone Black</td>
+</tr>
+<tr>
+<td><code>drive_alone_hispanic</code></td>
+<td>Drive Alone Hispanic</td>
+</tr>
+<tr>
+<td><code>drive_alone_white</code></td>
+<td>Drive Alone White</td>
+</tr>
+<tr>
+<td><code>driving_alone_to_work_pct</code></td>
+<td>Driving Alone to Work (%)</td>
+</tr>
+<tr>
+<td><code>driving_deaths</code></td>
+<td>Driving Deaths</td>
+</tr>
+<tr>
+<td><code>drug_overdose_deaths</code></td>
+<td>Drug Overdose Deaths</td>
+</tr>
+<tr>
+<td><code>drug_overdose_mortality_rate</code></td>
+<td>Drug Overdose Mortality Rate</td>
+</tr>
+<tr>
+<td><code>drug_overdose_mortality_rate_aian</code></td>
+<td>Drug Overdose Mortality Rate AIAN</td>
+</tr>
+<tr>
+<td><code>drug_overdose_mortality_rate_asian</code></td>
+<td>Drug Overdose Mortality Rate Asian</td>
+</tr>
+<tr>
+<td><code>drug_overdose_mortality_rate_black</code></td>
+<td>Drug Overdose Mortality Rate Black</td>
+</tr>
+<tr>
+<td><code>drug_overdose_mortality_rate_hispanic</code></td>
+<td>Drug Overdose Mortality Rate Hispanic</td>
+</tr>
+<tr>
+<td><code>drug_overdose_mortality_rate_white</code></td>
+<td>Drug Overdose Mortality Rate White</td>
+</tr>
+<tr>
+<td><code>excessive_drinking</code></td>
+<td>Excessive Drinking</td>
+</tr>
+<tr>
+<td><code>female</code></td>
+<td>Female</td>
+</tr>
+<tr>
+<td><code>firearm_fatalities</code></td>
+<td>Firearm Fatalities</td>
+</tr>
+<tr>
+<td><code>firearm_fatalities_rate</code></td>
+<td>Firearm Fatalities Rate</td>
+</tr>
+<tr>
+<td><code>firearm_fatalities_rate_aian</code></td>
+<td>Firearm Fatalities Rate AIAN</td>
+</tr>
+<tr>
+<td><code>firearm_fatalities_rate_asian</code></td>
+<td>Firearm Fatalities Rate Asian</td>
+</tr>
+<tr>
+<td><code>firearm_fatalities_rate_black</code></td>
+<td>Firearm Fatalities Rate Black</td>
+</tr>
+<tr>
+<td><code>firearm_fatalities_rate_hispanic</code></td>
+<td>Firearm Fatalities Rate Hispanic</td>
+</tr>
+<tr>
+<td><code>firearm_fatalities_rate_white</code></td>
+<td>Firearm Fatalities Rate White</td>
+</tr>
+<tr>
+<td><code>flu_vaccinations_vaccinated</code></td>
+<td>Flu Vaccinations Vaccinated</td>
+</tr>
+<tr>
+<td><code>food_environment_index</code></td>
+<td>Food Environment Index</td>
+</tr>
+<tr>
+<td><code>food_insecure_population</code></td>
+<td>Food Insecure Population</td>
+</tr>
+<tr>
+<td><code>food_insecurity_pct</code></td>
+<td>Food Insecurity (%)</td>
+</tr>
+<tr>
+<td><code>free_reduced_lunch_pct</code></td>
+<td>Free Reduced Lunch (%)</td>
+</tr>
+<tr>
+<td><code>frequent_mental_distress</code></td>
+<td>Frequent Mental Distress</td>
+</tr>
+<tr>
+<td><code>frequent_physical_distress</code></td>
+<td>Frequent Physical Distress</td>
+</tr>
+<tr>
+<td><code>gender_pay_gap</code></td>
+<td>Gender Pay Gap</td>
+</tr>
+<tr>
+<td><code>gender_pay_gap_ratio</code></td>
+<td>Gender Pay Gap Ratio</td>
+</tr>
+<tr>
+<td><code>health_behaviors_rank</code></td>
+<td>Health Behaviors Rank</td>
+</tr>
+<tr>
+<td><code>health_factors_rank</code></td>
+<td>Health Factors Rank</td>
+</tr>
+<tr>
+<td><code>health_outcomes_rank</code></td>
+<td>Health Outcomes Rank</td>
+</tr>
+<tr>
+<td><code>high_school_completion_pct</code></td>
+<td>High School Completion (%)</td>
+</tr>
+<tr>
+<td><code>high_school_graduation_cohort_size</code></td>
+<td>High School Graduation Cohort Size</td>
+</tr>
+<tr>
+<td><code>high_school_graduation_rate</code></td>
+<td>High School Graduation Rate</td>
+</tr>
+<tr>
+<td><code>hispanic</code></td>
+<td>Hispanic</td>
+</tr>
+<tr>
+<td><code>hiv_case_count</code></td>
+<td>HIV Case (count)</td>
+</tr>
+<tr>
+<td><code>hiv_prevalence_rate</code></td>
+<td>HIV Prevalence Rate</td>
+</tr>
+<tr>
+<td><code>homeowners</code></td>
+<td>Homeowners</td>
+</tr>
+<tr>
+<td><code>homeownership_pct</code></td>
+<td>Homeownership (%)</td>
+</tr>
+<tr>
+<td><code>homicide_rate</code></td>
+<td>Homicide Rate</td>
+</tr>
+<tr>
+<td><code>homicide_rate_aian</code></td>
+<td>Homicide Rate AIAN</td>
+</tr>
+<tr>
+<td><code>homicide_rate_asian</code></td>
+<td>Homicide Rate Asian</td>
+</tr>
+<tr>
+<td><code>homicide_rate_black</code></td>
+<td>Homicide Rate Black</td>
+</tr>
+<tr>
+<td><code>homicide_rate_hispanic</code></td>
+<td>Homicide Rate Hispanic</td>
+</tr>
+<tr>
+<td><code>homicide_rate_white</code></td>
+<td>Homicide Rate White</td>
+</tr>
+<tr>
+<td><code>household_income_aian</code></td>
+<td>Household Income AIAN</td>
+</tr>
+<tr>
+<td><code>household_income_asian</code></td>
+<td>Household Income Asian</td>
+</tr>
+<tr>
+<td><code>household_income_black</code></td>
+<td>Household Income Black</td>
+</tr>
+<tr>
+<td><code>household_income_hispanic</code></td>
+<td>Household Income Hispanic</td>
+</tr>
+<tr>
+<td><code>household_income_white</code></td>
+<td>Household Income White</td>
+</tr>
+<tr>
+<td><code>households_with_broadband_access</code></td>
+<td>Households with Broadband Access</td>
+</tr>
+<tr>
+<td><code>households_with_severe_cost_burden</code></td>
+<td>Households with Severe Cost Burden</td>
+</tr>
+<tr>
+<td><code>inadequate_facilities</code></td>
+<td>Inadequate Facilities</td>
+</tr>
+<tr>
+<td><code>income_80th_percentile</code></td>
+<td>Income 80th Percentile</td>
+</tr>
+<tr>
+<td><code>income_ratio</code></td>
+<td>Income Ratio</td>
+</tr>
+<tr>
+<td><code>infant_mortality_count</code></td>
+<td>Infant Mortality (count)</td>
+</tr>
+<tr>
+<td><code>infant_mortality_rate</code></td>
+<td>Infant Mortality Rate</td>
+</tr>
+<tr>
+<td><code>infant_mortality_rate_aian</code></td>
+<td>Infant Mortality Rate AIAN</td>
+</tr>
+<tr>
+<td><code>infant_mortality_rate_asian</code></td>
+<td>Infant Mortality Rate Asian</td>
+</tr>
+<tr>
+<td><code>infant_mortality_rate_black</code></td>
+<td>Infant Mortality Rate Black</td>
+</tr>
+<tr>
+<td><code>infant_mortality_rate_hispanic</code></td>
+<td>Infant Mortality Rate Hispanic</td>
+</tr>
+<tr>
+<td><code>infant_mortality_rate_white</code></td>
+<td>Infant Mortality Rate White</td>
+</tr>
+<tr>
+<td><code>injury_death_count</code></td>
+<td>Injury Death (count)</td>
+</tr>
+<tr>
+<td><code>injury_death_rate</code></td>
+<td>Injury Death Rate</td>
+</tr>
+<tr>
+<td><code>injury_death_rate_aian</code></td>
+<td>Injury Death Rate AIAN</td>
+</tr>
+<tr>
+<td><code>injury_death_rate_asian</code></td>
+<td>Injury Death Rate Asian</td>
+</tr>
+<tr>
+<td><code>injury_death_rate_black</code></td>
+<td>Injury Death Rate Black</td>
+</tr>
+<tr>
+<td><code>injury_death_rate_hispanic</code></td>
+<td>Injury Death Rate Hispanic</td>
+</tr>
+<tr>
+<td><code>injury_death_rate_white</code></td>
+<td>Injury Death Rate White</td>
+</tr>
+<tr>
+<td><code>insufficient_sleep</code></td>
+<td>Insufficient Sleep</td>
+</tr>
+<tr>
+<td><code>juvenile_arrest_count</code></td>
+<td>Juvenile Arrest (count)</td>
+</tr>
+<tr>
+<td><code>juvenile_arrest_rate</code></td>
+<td>Juvenile Arrest Rate</td>
+</tr>
+<tr>
+<td><code>labor_force</code></td>
+<td>Labor Force</td>
+</tr>
+<tr>
+<td><code>lbw_aian</code></td>
+<td>LBW AIAN</td>
+</tr>
+<tr>
+<td><code>lbw_asian</code></td>
+<td>LBW Asian</td>
+</tr>
+<tr>
+<td><code>lbw_black</code></td>
+<td>LBW Black</td>
+</tr>
+<tr>
+<td><code>lbw_hispanic</code></td>
+<td>LBW Hispanic</td>
+</tr>
+<tr>
+<td><code>lbw_white</code></td>
+<td>LBW White</td>
+</tr>
+<tr>
+<td><code>length_of_life_rank</code></td>
+<td>Length of Life Rank</td>
+</tr>
+<tr>
+<td><code>life_expectancy</code></td>
+<td>Life Expectancy</td>
+</tr>
+<tr>
+<td><code>life_expectancy_aian</code></td>
+<td>Life Expectancy AIAN</td>
+</tr>
+<tr>
+<td><code>life_expectancy_asian</code></td>
+<td>Life Expectancy Asian</td>
+</tr>
+<tr>
+<td><code>life_expectancy_black</code></td>
+<td>Life Expectancy Black</td>
+</tr>
+<tr>
+<td><code>life_expectancy_hispanic</code></td>
+<td>Life Expectancy Hispanic</td>
+</tr>
+<tr>
+<td><code>life_expectancy_white</code></td>
+<td>Life Expectancy White</td>
+</tr>
+<tr>
+<td><code>limited_access_to_healthy_foods</code></td>
+<td>Limited Access to Healthy Foods</td>
+</tr>
+<tr>
+<td><code>long_commute_drive_alone_pct</code></td>
+<td>Long Commute Drive Alone (%)</td>
+</tr>
+<tr>
+<td><code>long_commute_drives_alone</code></td>
+<td>Long Commute Drives Alone</td>
+</tr>
+<tr>
+<td><code>low_birthweight_pct</code></td>
+<td>Low Birthweight (%)</td>
+</tr>
+<tr>
+<td><code>mammography_screening_pct</code></td>
+<td>Mammography Screening (%)</td>
+</tr>
+<tr>
+<td><code>math_scores_average_grade_performance</code></td>
+<td>Math Scores Average Grade Performance</td>
+</tr>
+<tr>
+<td><code>median_household_income</code></td>
+<td>Median Household Income</td>
+</tr>
+<tr>
+<td><code>mens_median_earnings</code></td>
+<td>Mens Median Earnings</td>
+</tr>
+<tr>
+<td><code>mental_health_provider_rate</code></td>
+<td>Mental Health Provider Rate</td>
+</tr>
+<tr>
+<td><code>mental_health_providers</code></td>
+<td>Mental Health Providers</td>
+</tr>
+<tr>
+<td><code>motor_vehicle_death_count</code></td>
+<td>Motor Vehicle Death (count)</td>
+</tr>
+<tr>
+<td><code>motor_vehicle_mortality_rate</code></td>
+<td>Motor Vehicle Mortality Rate</td>
+</tr>
+<tr>
+<td><code>mv_mortality_rate_aian</code></td>
+<td>MV Mortality Rate AIAN</td>
+</tr>
+<tr>
+<td><code>mv_mortality_rate_asian</code></td>
+<td>MV Mortality Rate Asian</td>
+</tr>
+<tr>
+<td><code>mv_mortality_rate_black</code></td>
+<td>MV Mortality Rate Black</td>
+</tr>
+<tr>
+<td><code>mv_mortality_rate_hispanic</code></td>
+<td>MV Mortality Rate Hispanic</td>
+</tr>
+<tr>
+<td><code>mv_mortality_rate_white</code></td>
+<td>MV Mortality Rate White</td>
+</tr>
+<tr>
+<td><code>n_ranked_counties</code></td>
+<td>Number of Ranked Counties</td>
+</tr>
+<tr>
+<td><code>nh_aian_population_pct</code></td>
+<td>NH AIAN Population (%)</td>
+</tr>
+<tr>
+<td><code>nh_black_population_pct</code></td>
+<td>NH Black Population (%)</td>
+</tr>
+<tr>
+<td><code>nh_nhopi_population_pct</code></td>
+<td>NH NHOPI Population (%)</td>
+</tr>
+<tr>
+<td><code>nh_white</code></td>
+<td>NH White</td>
+</tr>
+<tr>
+<td><code>not_proficient_in_english</code></td>
+<td>Not Proficient in English</td>
+</tr>
+<tr>
+<td><code>other_primary_care_provider_rate</code></td>
+<td>Other Primary Care Provider Rate</td>
+</tr>
+<tr>
+<td><code>overcrowding</code></td>
+<td>Overcrowding</td>
+</tr>
+<tr>
+<td><code>petitioned_cases</code></td>
+<td>Petitioned Cases</td>
+</tr>
+<tr>
+<td><code>physical_environment_rank</code></td>
+<td>Physical Environment Rank</td>
+</tr>
+<tr>
+<td><code>physical_inactivity_pct</code></td>
+<td>Physical Inactivity (%)</td>
+</tr>
+<tr>
+<td><code>poor_mental_health_days</code></td>
+<td>Poor Mental Health Days</td>
+</tr>
+<tr>
+<td><code>poor_or_fair_health_pct</code></td>
+<td>Poor or Fair Health (%)</td>
+</tr>
+<tr>
+<td><code>poor_physical_health_days</code></td>
+<td>Poor Physical Health Days</td>
+</tr>
+<tr>
+<td><code>population</code></td>
+<td>Population</td>
+</tr>
+<tr>
+<td><code>population_pct</code></td>
+<td>Population (%)</td>
+</tr>
+<tr>
+<td><code>population_under_18_pct</code></td>
+<td>Population Under 18 (%)</td>
+</tr>
+<tr>
+<td><code>premature_mortality_count</code></td>
+<td>Premature Mortality (count)</td>
+</tr>
+<tr>
+<td><code>preventable_hosp_rate_aian</code></td>
+<td>Preventable Hosp Rate AIAN</td>
+</tr>
+<tr>
+<td><code>preventable_hosp_rate_asian</code></td>
+<td>Preventable Hosp Rate Asian</td>
+</tr>
+<tr>
+<td><code>preventable_hosp_rate_black</code></td>
+<td>Preventable Hosp Rate Black</td>
+</tr>
+<tr>
+<td><code>preventable_hosp_rate_hispanic</code></td>
+<td>Preventable Hosp Rate Hispanic</td>
+</tr>
+<tr>
+<td><code>preventable_hosp_rate_white</code></td>
+<td>Preventable Hosp Rate White</td>
+</tr>
+<tr>
+<td><code>preventable_hospitalization_rate</code></td>
+<td>Preventable Hospitalization Rate</td>
+</tr>
+<tr>
+<td><code>primary_care_physicians</code></td>
+<td>Primary Care Physicians</td>
+</tr>
+<tr>
+<td><code>primary_care_physicians_rate</code></td>
+<td>Primary Care Physicians Rate</td>
+</tr>
+<tr>
+<td><code>quality_of_life_rank</code></td>
+<td>Quality of Life Rank</td>
+</tr>
+<tr>
+<td><code>reading_scores_average_grade_performance</code></td>
+<td>Reading Scores Average Grade Performance</td>
+</tr>
+<tr>
+<td><code>residential_segregation_black_white_segregation_index</code></td>
+<td>Residential Segregation Black White Segregation Index</td>
+</tr>
+<tr>
+<td><code>rural</code></td>
+<td>Rural</td>
+</tr>
+<tr>
+<td><code>rural_pct</code></td>
+<td>Rural (%)</td>
+</tr>
+<tr>
+<td><code>school_funding_adequacy</code></td>
+<td>School Funding Adequacy</td>
+</tr>
+<tr>
+<td><code>school_funding_adequacy_2</code></td>
+<td>School Funding Adequacy 2</td>
+</tr>
+<tr>
+<td><code>school_segregation_segregation_index</code></td>
+<td>School Segregation Segregation Index</td>
+</tr>
+<tr>
+<td><code>screened_aian</code></td>
+<td>Screened AIAN</td>
+</tr>
+<tr>
+<td><code>screened_asian</code></td>
+<td>Screened Asian</td>
+</tr>
+<tr>
+<td><code>screened_black</code></td>
+<td>Screened Black</td>
+</tr>
+<tr>
+<td><code>screened_hispanic</code></td>
+<td>Screened Hispanic</td>
+</tr>
+<tr>
+<td><code>screened_white</code></td>
+<td>Screened White</td>
+</tr>
+<tr>
+<td><code>severe_housing_cost_burden</code></td>
+<td>Severe Housing Cost Burden</td>
+</tr>
+<tr>
+<td><code>severe_housing_cost_burden_pct</code></td>
+<td>Severe Housing Cost Burden (%)</td>
+</tr>
+<tr>
+<td><code>severe_housing_problems</code></td>
+<td>Severe Housing Problems</td>
+</tr>
+<tr>
+<td><code>social_association_count</code></td>
+<td>Social Association (count)</td>
+</tr>
+<tr>
+<td><code>social_association_rate</code></td>
+<td>Social Association Rate</td>
+</tr>
+<tr>
+<td><code>social_economic_factors_rank</code></td>
+<td>Social &amp; Economic Factors Rank</td>
+</tr>
+<tr>
+<td><code>some_college</code></td>
+<td>Some College</td>
+</tr>
+<tr>
+<td><code>suicide_count</code></td>
+<td>Suicide (count)</td>
+</tr>
+<tr>
+<td><code>suicide_rate_age_adjusted</code></td>
+<td>Suicide Rate Age Adjusted</td>
+</tr>
+<tr>
+<td><code>suicide_rate_aian</code></td>
+<td>Suicide Rate AIAN</td>
+</tr>
+<tr>
+<td><code>suicide_rate_asian</code></td>
+<td>Suicide Rate Asian</td>
+</tr>
+<tr>
+<td><code>suicide_rate_black</code></td>
+<td>Suicide Rate Black</td>
+</tr>
+<tr>
+<td><code>suicide_rate_hispanic</code></td>
+<td>Suicide Rate Hispanic</td>
+</tr>
+<tr>
+<td><code>suicide_rate_white</code></td>
+<td>Suicide Rate White</td>
+</tr>
+<tr>
+<td><code>teen_birth_rate</code></td>
+<td>Teen Birth Rate</td>
+</tr>
+<tr>
+<td><code>teen_birth_rate_aian</code></td>
+<td>Teen Birth Rate AIAN</td>
+</tr>
+<tr>
+<td><code>teen_birth_rate_asian</code></td>
+<td>Teen Birth Rate Asian</td>
+</tr>
+<tr>
+<td><code>teen_birth_rate_black</code></td>
+<td>Teen Birth Rate Black</td>
+</tr>
+<tr>
+<td><code>teen_birth_rate_hispanic</code></td>
+<td>Teen Birth Rate Hispanic</td>
+</tr>
+<tr>
+<td><code>teen_birth_rate_white</code></td>
+<td>Teen Birth Rate White</td>
+</tr>
+<tr>
+<td><code>traffic_volume</code></td>
+<td>Traffic Volume</td>
+</tr>
+<tr>
+<td><code>unemployed</code></td>
+<td>Unemployed</td>
+</tr>
+<tr>
+<td><code>unemployment_pct</code></td>
+<td>Unemployment (%)</td>
+</tr>
+<tr>
+<td><code>uninsured</code></td>
+<td>Uninsured</td>
+</tr>
+<tr>
+<td><code>uninsured_adults</code></td>
+<td>Uninsured Adults</td>
+</tr>
+<tr>
+<td><code>uninsured_children</code></td>
+<td>Uninsured Children</td>
+</tr>
+<tr>
+<td><code>vaccinated_aian</code></td>
+<td>Vaccinated AIAN</td>
+</tr>
+<tr>
+<td><code>vaccinated_asian</code></td>
+<td>Vaccinated Asian</td>
+</tr>
+<tr>
+<td><code>vaccinated_black</code></td>
+<td>Vaccinated Black</td>
+</tr>
+<tr>
+<td><code>vaccinated_hispanic</code></td>
+<td>Vaccinated Hispanic</td>
+</tr>
+<tr>
+<td><code>vaccinated_white</code></td>
+<td>Vaccinated White</td>
+</tr>
+<tr>
+<td><code>voter_turnout</code></td>
+<td>Voter Turnout</td>
+</tr>
+<tr>
+<td><code>years_of_potential_life_lost_rate</code></td>
+<td>Years of Potential Life Lost Rate</td>
+</tr>
+<tr>
+<td><code>ypll_rate_aian</code></td>
+<td>YPLL Rate AIAN</td>
+</tr>
+<tr>
+<td><code>ypll_rate_asian</code></td>
+<td>YPLL Rate Asian</td>
+</tr>
+<tr>
+<td><code>ypll_rate_black</code></td>
+<td>YPLL Rate Black</td>
+</tr>
+<tr>
+<td><code>ypll_rate_hispanic</code></td>
+<td>YPLL Rate Hispanic</td>
+</tr>
+<tr>
+<td><code>ypll_rate_white</code></td>
+<td>YPLL Rate White</td>
+</tr>
+</tbody>
+</table></article>
+    </main>
+  </div>
+
+  <footer class="footer">
+  Generated from <code>data/county_health_ranking/docs/CHR_County_Data_2023.md</code>.
+  County values are primary/mean measures from the CHR national release; verify against
+  <a href="https://www.countyhealthrankings.org/health-data/methodology-and-sources/data-documentation" target="_blank" rel="noopener">official CHR documentation</a> before publication.
+  </footer>
+</body>
+</html>

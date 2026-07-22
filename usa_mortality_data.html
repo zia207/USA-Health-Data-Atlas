@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>USA Mortality Data · USA-Health Data Atlas</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/alasql@4.4.0/dist/alasql.min.js"></script>
+<script src="assets/mortality_county_data.js"></script>
+<script src="assets/geojson_counties_fips.js"></script>
+<script src="assets/geojson_us_states.js"></script>
+<script src="assets/superfund_npl_data.js"></script>
+<script src="assets/superfund_overlay.js"></script>
+<script src="assets/geochem_soil_manifest.js"></script>
+<script src="assets/geochem_soil_overlay.js"></script>
+<script src="assets/air_quality_data.js"></script>
+<script src="assets/air_quality_overlay.js"></script>
+<script src="assets/map_zoom_control.js"></script>
+<script src="assets/map_layers_control.js"></script>
+<script src="assets/map_style_controls.js"></script>
+<script src="assets/map_export.js"></script>
+<style>
+:root {
+  --ink: #0b1f2a; --panel: #ffffff; --rail: #0e3a4f; --accent: #1d7a8c;
+  --paper: #e8eef1; --hair: #c5d0d6; --steel: #5a6e78; --lake: #14707e;
+  --good: #2f7d4e; --warn: #b7431c; --focus: #0e4f8b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.5; }
+a { color: var(--lake); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.banner { background: linear-gradient(90deg, #071821 0%, #0e3a4f 55%, #14586f 100%); color: #e8f2f5; border-bottom: 4px solid var(--accent); }
+.banner-inner { max-width: 1320px; margin: 0 auto; padding: 18px 20px 20px; }
+.eyebrow { font-family: ui-monospace, Consolas, monospace; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #8fb6bd; }
+.banner-top { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.banner-copy { min-width: 0; flex: 1; }
+.banner-aside { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.banner-logo {
+  display: block; width: clamp(72px, 12vw, 110px); height: auto;
+  background: #fff; border-radius: 10px; padding: 5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+.explorer-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 560px; }
+.explorer-nav a {
+  display: inline-block; background: rgba(255,255,255,.08); color: #e8f2f5;
+  text-decoration: none; border: 1px solid rgba(255,255,255,.22);
+  padding: 6px 10px; font-size: 12px; white-space: nowrap;
+}
+.explorer-nav a:hover { background: rgba(255,255,255,.14); }
+.explorer-nav a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 720px) {
+  .banner-aside { width: 100%; align-items: stretch; }
+  .banner-logo { align-self: flex-end; }
+  .explorer-nav { justify-content: flex-start; max-width: none; }
+}
+h1 { margin: 8px 0 6px; font-size: clamp(26px, 3.5vw, 40px); line-height: 1.08; font-weight: 750; }
+h1 span { color: #7fcad4; }
+.sub { color: #b9c9ce; font-size: 14px; max-width: 900px; }
+.layout { max-width: 1320px; margin: 0 auto; padding: 14px 16px 48px; display: grid; grid-template-columns: 310px 1fr; gap: 14px; }
+@media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+.sidebar, .panel { background: var(--panel); border: 1px solid var(--hair); padding: 14px; }
+.sidebar { position: sticky; top: 10px; align-self: start; max-height: calc(100vh - 20px); overflow: auto; }
+@media (max-width: 980px) { .sidebar { position: static; max-height: none; } }
+.sidebar h2, .panel h2 { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--steel); margin: 0 0 10px; font-family: ui-monospace, Consolas, monospace; }
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--steel); margin-bottom: 4px; font-family: ui-monospace, Consolas, monospace; }
+select, textarea, button { font: inherit; color: var(--ink); }
+select, textarea { width: 100%; border: 1px solid var(--hair); background: #f7fafa; padding: 8px 9px; }
+textarea { min-height: 110px; font-family: ui-monospace, Consolas, Menlo, monospace; font-size: 12.5px; line-height: 1.45; resize: vertical; }
+.mode { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.mode label { display: flex; gap: 8px; align-items: center; cursor: pointer; }
+.note { font-size: 12px; color: var(--steel); line-height: 1.45; margin-top: 8px; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.btn { background: var(--rail); color: #fff; border: none; padding: 8px 12px; cursor: pointer; font-size: 13px; font-weight: 650; }
+.btn:hover { background: var(--accent); }
+.btn.ghost { background: transparent; color: var(--steel); border: 1px dashed var(--steel); }
+.btn.ghost:hover { color: var(--ink); border-color: var(--ink); }
+.main { display: flex; flex-direction: column; gap: 12px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+@media (max-width: 780px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+.kpi { background: var(--panel); border: 1px solid var(--hair); border-top: 3px solid var(--accent); padding: 10px 12px; }
+.kpi .num { font-family: ui-monospace, Consolas, monospace; font-size: 22px; word-break: break-word; }
+.kpi .lab { font-size: 11px; color: var(--steel); text-transform: uppercase; letter-spacing: .05em; }
+#map { height: 580px; width: 100%; background: #dfe7ea; border: 1px solid var(--hair); }
+.map-legend { background: rgba(255,255,255,.96); border: 1px solid var(--hair); padding: 10px 12px; font-size: 12px; line-height: 1.45; min-width: 200px; max-width: 280px; box-shadow: 0 2px 10px rgba(20,38,46,.18); }
+.map-legend strong { display: block; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--steel); font-family: ui-monospace, Consolas, monospace; margin-bottom: 6px; }
+.legend-ramp { display: flex; height: 12px; border: 1px solid var(--hair); margin: 6px 0 4px; overflow: hidden; }
+.legend-ramp span { flex: 1; }
+.legend-labels { display: flex; justify-content: space-between; font-family: ui-monospace, Consolas, monospace; font-size: 10px; color: var(--steel); }
+.status { font-size: 13px; color: var(--steel); margin-top: 8px; }
+.status.ok { color: var(--good); }
+.status.err { color: var(--warn); }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.presets button { background: #f1f7f8; border: 1px solid var(--lake); color: var(--lake); padding: 4px 10px; cursor: pointer; font-size: 11.5px; }
+.presets button:hover { background: var(--lake); color: #fff; }
+.table-wrap { overflow: auto; max-height: 360px; border: 1px solid var(--hair); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { position: sticky; top: 0; background: #0e3a4f; color: #fff; text-align: left; padding: 8px 10px; font-weight: 600; }
+td { padding: 7px 10px; border-bottom: 1px solid #e6eef0; }
+tr:nth-child(even) td { background: #f4f8f8; }
+.sql-preview { margin-top: 8px; padding: 10px 12px; background: #14262e; color: #b9e0e6; font-family: ui-monospace, Consolas, Menlo, monospace; font-size: 12px; line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+.footer { max-width: 1320px; margin: 0 auto; padding: 0 16px 36px; font-size: 12px; color: var(--steel); }
+</style>
+</head>
+<body>
+  <header class="banner">
+    <div class="banner-inner">
+      <div class="banner-top">
+        <div class="banner-copy">
+          <div class="eyebrow">USA-Health Data Atlas · NIMHD HDPulse</div>
+          <h1>USA Mortality <span>Data</span></h1>
+          <p class="sub">
+            Built-in explorer for age-adjusted mortality rates (deaths per 100,000) from
+            <a href="https://hdpulse.nimhd.nih.gov/data-portal/mortality/map?age=001&amp;age_options=age_11&amp;cod=256&amp;cod_options=cod_15&amp;comparison=states_to_us&amp;comparison_options=comparison_state&amp;race=00&amp;race_options=race_6&amp;ratetype=aa&amp;ratetype_options=ratetype_2&amp;ruralurban=0&amp;ruralurban_options=ruralurban_3&amp;sex=0&amp;sex_options=sex_3&amp;statefips=99&amp;statefips_options=area_states&amp;yeargroup=5&amp;yeargroup_options=year5yearmort_1&amp;county=01000&amp;county_options=counties_alabama&amp;radio_comparison=areas&amp;radio_comparison_options=cods_or_areas" style="color:#7fcad4" target="_blank" rel="noopener">NIMHD HDPulse mortality maps</a>
+            — major causes of death at state and county scale (2019–2023, all races, both sexes, all ages).
+          </p>
+        </div>
+        <div class="banner-aside">
+          <img class="banner-logo" src="upatta_logo.png" alt="Upatta Data Analytics" width="110" height="110"/>
+          <nav class="explorer-nav" aria-label="Atlas navigation">
+            <a href="index.html">Home</a>
+            <a href="usa_county_health_rankings.html">County Health Rankings</a>
+            <a href="usa_health_experience.html">Place-based Health Experience</a>
+            <a href="usa_svi.html">Social Vulnerability Index</a>
+            <a class="active" href="usa_mortality_data.html" aria-current="page">USA Mortality Data</a>
+            <a href="usa_cancer_atlas.html">USA Cancer Atlas</a>
+            <a href="usa_overdose_mortality.html">Overdose Mortality</a>
+            <a href="usa_census_demograpy.html">Census Demography</a>
+            <a href="usa_religion_census.html">Religion Census</a>
+            <a href="usa_presidential_election_data.html">Presidential Elections</a>
+            <a href="eda_model_development.html">EDA &amp; Models</a>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Query filters</h2>
+
+      <div class="field">
+        <label for="indicator">Cause of death</label>
+        <select id="indicator"></select>
+      </div>
+
+      <div class="field">
+        <label>Map geography</label>
+        <div class="mode">
+          <label><input type="radio" name="maplevel" value="states" checked> USA state map</label>
+          <label><input type="radio" name="maplevel" value="counties"> County map</label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="state">State focus</label>
+        <select id="state"><option value="ALL">All states (USA)</option></select>
+      </div>
+
+      <div class="field">
+        <label for="palette">Color palette</label>
+        <select id="palette"></select>
+      </div>
+
+      <div class="field">
+        <label for="basemap">Basemap</label>
+        <select id="basemap">
+          <option value="osm" selected>Street map (OpenStreetMap)</option>
+          <option value="esri">Satellite (Esri)</option>
+          <option value="gsat">Satellite (Google)</option>
+          <option value="ghybrid">Satellite + labels (Google)</option>
+          <option value="topo">Topographic (Esri)</option>
+        </select>
+      </div>
+
+      <div class="btnrow">
+        <button class="btn" id="btn-apply" type="button">Apply filters</button>
+        <button class="btn ghost" id="btn-sql" type="button">Run SQL</button>
+        <button type="button" class="export-pdf-btn" id="btn-export-map">Export map (PDF / PNG)</button>
+      </div>
+
+      <div id="sf-mount"></div>
+      <div id="gc-mount"></div>
+      <div id="aq-mount"></div>
+
+      <div class="field" style="margin-top:14px">
+        <label for="sql">SQL (summarize &amp; visualize)</label>
+        <textarea id="sql" spellcheck="false"></textarea>
+        <div class="presets" id="presets"></div>
+        <p class="note">
+          Tables: <code>mortality_states</code>, <code>mortality_counties</code>.
+          Column <code>val</code> is the age-adjusted death rate (per 100,000) for the selected cause;
+          <code>avg_count</code> is the average annual death count.
+          Suppressed / unavailable rates are omitted.
+        </p>
+      </div>
+    </aside>
+
+    <section class="main">
+      <div class="kpis" id="kpis"></div>
+      <div class="panel">
+        <h2 id="map-title">Map</h2>
+        <div id="map"></div>
+        <div class="status" id="status">Loading…</div>
+        <div class="sql-preview" id="sql-used" hidden></div>
+      </div>
+      <div class="panel">
+        <h2>Results table</h2>
+        <div class="table-wrap">
+          <table>
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    Mortality rates from
+    <a href="https://hdpulse.nimhd.nih.gov/data-portal/mortality/map" target="_blank" rel="noopener">NIMHD HDPulse</a>
+    (National Vital Statistics System; age-adjusted to the 2000 U.S. standard population via SEER*Stat).
+    Built-in explorer shows all races, both sexes, all ages, 5-year rates.
+    Small-area rates may be unstable; some values are suppressed by HDPulse for confidentiality.
+    Always verify against the official portal before formal reporting. Basemap tiles © Esri, Google, OpenStreetMap.
+  </footer>
+
+<script>
+const USA_BOUNDS = [[24.5, -125], [49.5, -66.5]];
+const DEFAULT_PALETTE = 'ylorrd';
+
+let DATA = null;
+let CAUSES = [];
+let CODES = [];
+let map = null, choropleth = null, choroplethGroup = null, legendCtrl = null, currentBase = null, baseLayers = {};
+let COUNTY_GEO = null, STATE_GEO = null;
+let sfOverlay = null;
+let gcOverlay = null;
+let aqOverlay = null;
+
+const $ = (id) => document.getElementById(id);
+const mapLevel = () => document.querySelector('input[name="maplevel"]:checked').value;
+const indCode = () => $('indicator').value;
+const indLabel = () => {
+  const m = CAUSES.find((x) => x.code === indCode());
+  return m ? m.label : indCode();
+};
+const indIdx = () => CODES.indexOf(indCode());
+
+function fmt(v) {
+  if (v === null || v === undefined || Number.isNaN(v)) return '—';
+  if (typeof v === 'number') return v.toLocaleString(undefined, { maximumFractionDigits: 1 });
+  return String(v);
+}
+
+function activeColors() {
+  const id = ($('palette') && $('palette').value) || DEFAULT_PALETTE;
+  return (window.MapStyleControls && MapStyleControls.getColors(id))
+    || ['#ffffb2', '#fecc5c', '#fd8d3c', '#f03b20', '#bd0026'];
+}
+
+function colorScale(vmin, vmax, v) {
+  if (!Number.isFinite(v) || vmax <= vmin) return '#cbd5e1';
+  const colors = activeColors();
+  const t = Math.max(0, Math.min(1, (v - vmin) / (vmax - vmin)));
+  const idx = Math.min(colors.length - 1, Math.floor(t * (colors.length - 1) + 1e-9));
+  return colors[idx];
+}
+
+function setMapLevel(level) {
+  const el = document.querySelector(`input[name="maplevel"][value="${level}"]`);
+  if (el) el.checked = true;
+}
+
+function onLegendLevelChange(level) {
+  setMapLevel(level);
+  applyFilters();
+}
+
+function onLegendPaletteChange(id) {
+  if ($('palette')) $('palette').value = id;
+  applyFilters();
+}
+
+function buildTables() {
+  const idx = indIdx();
+  const stateRows = DATA.state_rows.map((r) => ({
+    state_abbr: r[0],
+    state_fips: r[1],
+    state_name: r[2],
+    val: r[3][idx],
+    avg_count: r[4][idx],
+  }));
+  const countyRows = DATA.county_rows.map((r) => ({
+    fips: r[0],
+    state_abbr: r[1],
+    county: r[2],
+    val: r[3][idx],
+    avg_count: r[4][idx],
+  }));
+  alasql('DROP TABLE IF EXISTS mortality_states');
+  alasql('DROP TABLE IF EXISTS mortality_counties');
+  alasql('CREATE TABLE mortality_states');
+  alasql('CREATE TABLE mortality_counties');
+  alasql.tables.mortality_states.data = stateRows.filter((r) => r.val != null);
+  alasql.tables.mortality_counties.data = countyRows.filter((r) => r.val != null);
+}
+
+function fillIndicators() {
+  const sel = $('indicator');
+  const prev = sel.value;
+  sel.innerHTML = '';
+  CAUSES.forEach((c) => {
+    const opt = document.createElement('option');
+    opt.value = c.code;
+    opt.textContent = c.label;
+    sel.appendChild(opt);
+  });
+  if ([...sel.options].some((o) => o.value === prev)) sel.value = prev;
+  else if ([...sel.options].some((o) => o.value === '247')) sel.value = '247';
+  else if (sel.options.length) sel.selectedIndex = 0;
+}
+
+function fillStates() {
+  const sel = $('state');
+  const states = DATA.state_rows.map((r) => r[0]).filter(Boolean).sort();
+  sel.innerHTML = '<option value="ALL">All states (USA)</option>';
+  states.forEach((s) => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    sel.appendChild(opt);
+  });
+}
+
+function defaultSQL() {
+  const level = mapLevel();
+  const state = $('state').value;
+  if (level === 'states') {
+    return `SELECT state_abbr, state_name, val, avg_count\nFROM mortality_states\nORDER BY val DESC`;
+  }
+  if (state === 'ALL') {
+    return `SELECT fips, county, state_abbr, val, avg_count\nFROM mortality_counties\nORDER BY val DESC`;
+  }
+  return `SELECT fips, county, state_abbr, val, avg_count\nFROM mortality_counties\nWHERE state_abbr = '${state}'\nORDER BY val DESC`;
+}
+
+function fillPresets() {
+  const box = $('presets');
+  box.innerHTML = '';
+  const examples = [
+    { label: 'States by rate', sql: 'SELECT state_abbr, state_name, val, avg_count FROM mortality_states ORDER BY val DESC' },
+    { label: 'Top counties', sql: 'SELECT fips, county, state_abbr, val, avg_count FROM mortality_counties ORDER BY val DESC LIMIT 25' },
+    { label: 'Counties in TX', sql: "SELECT fips, county, state_abbr, val, avg_count FROM mortality_counties WHERE state_abbr = 'TX' ORDER BY val DESC" },
+    { label: 'State summary (CA)', sql: "SELECT COUNT(*) AS n, MIN(val) AS min_val, AVG(val) AS mean_val, MAX(val) AS max_val FROM mortality_counties WHERE state_abbr = 'CA'" },
+  ];
+  examples.forEach((ex) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = ex.label; b.title = ex.sql;
+    b.addEventListener('click', () => { $('sql').value = ex.sql; runSQL(); });
+    box.appendChild(b);
+  });
+  const sync = document.createElement('button');
+  sync.type = 'button'; sync.textContent = 'Sync SQL from filters';
+  sync.addEventListener('click', () => { $('sql').value = defaultSQL(); });
+  box.appendChild(sync);
+}
+
+function setKPIs(rows, level, state) {
+  const vals = rows.map((r) => Number(r.val)).filter(Number.isFinite);
+  const med = vals.length ? vals.slice().sort((a, b) => a - b)[Math.floor(vals.length / 2)] : null;
+  const us = (DATA.meta.us_rates || [])[indIdx()];
+  const geo = level === 'states' ? 'States' : (state === 'ALL' ? 'Counties (USA)' : `Counties (${state})`);
+  $('kpis').innerHTML = [
+    ['Cause', indLabel()],
+    ['Rows', rows.length],
+    ['Median rate', fmt(med)],
+    ['U.S. rate', us != null ? fmt(us) : geo],
+  ].map(([lab, num]) => `<div class="kpi"><div class="num">${num}</div><div class="lab">${lab}</div></div>`).join('');
+}
+
+function renderTable(rows) {
+  const thead = $('thead'), tbody = $('tbody');
+  if (!rows.length) { thead.innerHTML = ''; tbody.innerHTML = '<tr><td>No rows returned.</td></tr>'; return; }
+  const cols = Object.keys(rows[0]);
+  thead.innerHTML = '<tr>' + cols.map((c) => `<th>${c}</th>`).join('') + '</tr>';
+  const show = rows.slice(0, 500);
+  tbody.innerHTML = show.map((row) => '<tr>' + cols.map((c) => `<td>${fmt(row[c])}</td>`).join('') + '</tr>').join('')
+    + (rows.length > 500 ? `<tr><td colspan="${cols.length}">Showing first 500 of ${rows.length} rows.</td></tr>` : '');
+}
+
+function initMap() {
+  map = L.map('map', {
+    zoomControl: false, worldCopyJump: false,
+    maxBounds: L.latLngBounds([-5, -180], [72, -40]),
+    maxBoundsViscosity: 0.85, minZoom: 3,
+  });
+  map.fitBounds(USA_BOUNDS, { padding: [10, 10] });
+  baseLayers = {
+    esri: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri', maxZoom: 18 }),
+    gsat: L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { attribution: 'Imagery © Google', maxZoom: 20 }),
+    ghybrid: L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { attribution: 'Imagery © Google', maxZoom: 20 }),
+    osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors', maxZoom: 19 }),
+    topo: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri', maxZoom: 18 }),
+  };
+  currentBase = baseLayers.osm.addTo(map);
+  choroplethGroup = L.layerGroup().addTo(map);
+  if (window.attachMapZoomControl) attachMapZoomControl(map, { bounds: USA_BOUNDS });
+  if (window.attachMapLayersControl) {
+    attachMapLayersControl(map, baseLayers, {
+      selectId: 'basemap',
+      overlays: { 'Choropleth data': choroplethGroup },
+      onChange(key) { currentBase = baseLayers[key] || currentBase; },
+    });
+  }
+  map.on('overlayremove', (e) => {
+    if (e.layer === choroplethGroup && legendCtrl) {
+      map.removeControl(legendCtrl);
+      legendCtrl = null;
+    }
+  });
+  map.on('overlayadd', (e) => {
+    if (e.layer === choroplethGroup) applyFilters();
+  });
+  setTimeout(() => map.invalidateSize(), 50);
+}
+
+function setBasemap(key) {
+  const next = baseLayers[key] || baseLayers.osm;
+  if (currentBase === next && map.hasLayer(next)) return;
+  if (currentBase) map.removeLayer(currentBase);
+  currentBase = next.addTo(map);
+}
+
+function clearLayer() {
+  if (choroplethGroup) choroplethGroup.clearLayers();
+  choropleth = null;
+}
+
+function choroplethVisible() {
+  return choroplethGroup && map && map.hasLayer(choroplethGroup);
+}
+
+function updateLegend(title, vmin, vmax, subtitle) {
+  if (legendCtrl) { map.removeControl(legendCtrl); legendCtrl = null; }
+  if (!choroplethVisible()) return;
+  const colors = activeColors();
+  const paletteId = ($('palette') && $('palette').value) || DEFAULT_PALETTE;
+  const level = mapLevel();
+  legendCtrl = L.control({ position: 'topright' });
+  legendCtrl.onAdd = function () {
+    const div = L.DomUtil.create('div', 'map-legend');
+    const ramp = colors.map((c) => `<span style="background:${c}"></span>`).join('');
+    div.innerHTML = `<strong>${title}</strong><div class="legend-ramp">${ramp}</div>`
+      + `<div class="legend-labels"><span>${fmt(vmin)}</span><span>${fmt(vmax)}</span></div>`
+      + `<div style="margin-top:6px;color:#5a6e78">${subtitle || 'Age-adjusted rate per 100,000'}</div>`;
+    if (window.MapStyleControls) {
+      MapStyleControls.bindLegendChrome(div, {
+        levels: [
+          { value: 'states', label: 'State' },
+          { value: 'counties', label: 'County' },
+        ],
+        level,
+        paletteId,
+        onLevelChange: onLegendLevelChange,
+        onPaletteChange: onLegendPaletteChange,
+      });
+    }
+    L.DomEvent.disableClickPropagation(div);
+    return div;
+  };
+  legendCtrl.addTo(map);
+}
+
+function fitToLayer(layer, tight) {
+  map.invalidateSize();
+  try {
+    const b = layer.getBounds();
+    if (!b.isValid()) throw new Error('bad');
+    const spanLng = Math.abs(b.getEast() - b.getWest());
+    const spanLat = Math.abs(b.getNorth() - b.getSouth());
+    if (spanLng > 100 || spanLat > 60) {
+      map.fitBounds(USA_BOUNDS, { padding: [20, 20], maxZoom: 5 });
+      return;
+    }
+    map.fitBounds(b.pad(0.06), { padding: [28, 28], maxZoom: tight ? 9 : 6, animate: true });
+  } catch (_) {
+    map.fitBounds(USA_BOUNDS, { padding: [20, 20], maxZoom: 5 });
+  }
+}
+
+function featureCountyFips(f) {
+  let fid = f.id;
+  if (fid == null && f.properties && f.properties.STATE != null) {
+    fid = String(f.properties.STATE).padStart(2, '0') + String(f.properties.COUNTY).padStart(3, '0');
+  }
+  fid = String(fid || '').replace(/^0500000US/, '');
+  if (fid.length > 5) fid = fid.slice(-5);
+  return fid.padStart(5, '0');
+}
+
+function renderStateMap(rows) {
+  const valueMap = {};
+  rows.forEach((r) => {
+    const a = String(r.state_abbr || '').toUpperCase();
+    const v = Number(r.val);
+    if (a && Number.isFinite(v)) valueMap[a] = v;
+  });
+  clearLayer();
+  const vals = Object.values(valueMap);
+  if (!vals.length) return;
+  const vmin = Math.min(...vals), vmax = Math.max(...vals);
+  const onlyOne = Object.keys(valueMap).length === 1;
+  const features = STATE_GEO.features.filter((f) => {
+    const abbr = (f.properties && f.properties.abbr) || f.id;
+    return onlyOne ? valueMap[abbr] !== undefined : true;
+  });
+  choropleth = L.geoJSON({ type: 'FeatureCollection', features }, {
+    style(feature) {
+      const abbr = (feature.properties && feature.properties.abbr) || feature.id;
+      const v = valueMap[abbr];
+      if (v === undefined) return { fillColor: '#cbd5e1', color: '#334155', weight: 0.6, fillOpacity: 0.2 };
+      return { fillColor: colorScale(vmin, vmax, v), color: '#0f172a', weight: 1, fillOpacity: 0.78 };
+    },
+    onEachFeature(feature, layer) {
+      const abbr = (feature.properties && feature.properties.abbr) || feature.id;
+      const name = (feature.properties && feature.properties.name) || abbr;
+      const v = valueMap[abbr];
+      layer.bindTooltip(
+        v === undefined
+          ? `<b>${name}</b><br>No data / suppressed`
+          : `<b>${name} (${abbr})</b><br>${indLabel()}: <b>${fmt(v)}</b> per 100,000`,
+        { sticky: true }
+      );
+    },
+  });
+  choroplethGroup.addLayer(choropleth);
+  updateLegend(indLabel(), vmin, vmax, `${DATA.meta.year_group} · age-adjusted per 100,000`);
+  if (choroplethVisible()) fitToLayer(choropleth, onlyOne);
+}
+
+function renderCountyMap(rows, stateFocus) {
+  const valueMap = {}, nameMap = {};
+  rows.forEach((r) => {
+    const fips = String(r.fips || '').padStart(5, '0');
+    const v = Number(r.val);
+    if (Number.isFinite(v)) valueMap[fips] = v;
+    nameMap[fips] = r.county || fips;
+  });
+  clearLayer();
+  const vals = Object.values(valueMap);
+  if (!vals.length) return;
+  const sorted = vals.slice().sort((a, b) => a - b);
+  const vmin = sorted[Math.floor(sorted.length * 0.02)] ?? sorted[0];
+  const vmax = sorted[Math.floor(sorted.length * 0.98)] ?? sorted[sorted.length - 1];
+  const focus = stateFocus && stateFocus !== 'ALL' ? stateFocus : null;
+  const features = COUNTY_GEO.features.filter((f) => {
+    const fips = featureCountyFips(f);
+    if (valueMap[fips] === undefined) return false;
+    if (focus) {
+      const row = DATA.county_rows.find((r) => r[0] === fips);
+      return row && row[1] === focus;
+    }
+    return true;
+  });
+  choropleth = L.geoJSON({ type: 'FeatureCollection', features }, {
+    style(feature) {
+      const fips = featureCountyFips(feature);
+      return { fillColor: colorScale(vmin, vmax, valueMap[fips]), color: '#0f172a', weight: focus ? 0.7 : 0.3, fillOpacity: 0.78 };
+    },
+    onEachFeature(feature, layer) {
+      const fips = featureCountyFips(feature);
+      layer.bindTooltip(
+        `<b>${nameMap[fips] || fips}</b><br>FIPS ${fips}<br>${indLabel()}: <b>${fmt(valueMap[fips])}</b> per 100,000`,
+        { sticky: true }
+      );
+    },
+  });
+  choroplethGroup.addLayer(choropleth);
+  updateLegend(indLabel(), vmin, vmax, focus ? `Counties in ${focus}` : 'County choropleth');
+  if (choroplethVisible()) fitToLayer(choropleth, Boolean(focus));
+}
+
+function runSQL() {
+  const status = $('status');
+  const sqlBox = $('sql-used');
+  const sql = $('sql').value.trim();
+  if (!sql) { status.textContent = 'Enter a SQL query.'; status.className = 'status err'; return; }
+
+  try {
+    buildTables();
+    const level = mapLevel();
+    const state = $('state').value;
+
+    let rows = alasql(sql);
+    if (!Array.isArray(rows)) rows = [];
+    rows = rows.map((r) => {
+      const out = { ...r };
+      if (out.val === undefined) {
+        if (out.mean_val !== undefined) out.val = out.mean_val;
+        else if (out.max_val !== undefined) out.val = out.max_val;
+        else if (out.min_val !== undefined) out.val = out.min_val;
+      }
+      return out;
+    });
+
+    let drawLevel = level;
+    if (rows.length && rows[0].fips !== undefined) drawLevel = 'counties';
+    else if (rows.length && rows[0].state_abbr !== undefined && rows[0].fips === undefined) drawLevel = 'states';
+    document.querySelector(`input[name="maplevel"][value="${drawLevel}"]`).checked = true;
+
+    const statesIn = [...new Set(rows.map((r) => r.state_abbr).filter(Boolean))];
+    const focus = statesIn.length === 1 ? statesIn[0] : state;
+
+    setKPIs(rows, drawLevel, focus);
+    renderTable(rows);
+    $('map-title').textContent = drawLevel === 'states' ? 'USA state map' : 'County map';
+
+    if (!rows.length || rows[0].val === undefined) {
+      clearLayer();
+      status.textContent = `Query OK — ${rows.length} row(s). No mappable val.`;
+      status.className = 'status ok';
+    } else if (drawLevel === 'states') {
+      renderStateMap(rows);
+      status.textContent = `Query OK — ${rows.length} state row(s) · ${DATA.meta.year_group}.`;
+      status.className = 'status ok';
+    } else {
+      renderCountyMap(rows, focus);
+      status.textContent = focus && focus !== 'ALL'
+        ? `Query OK — ${rows.length} counties in ${focus}; map zoomed to state.`
+        : `Query OK — ${rows.length} counties mapped.`;
+      status.className = 'status ok';
+    }
+
+    if (sfOverlay) sfOverlay.refresh();
+    if (gcOverlay) gcOverlay.refresh();
+    if (aqOverlay) aqOverlay.refresh();
+    sqlBox.hidden = false;
+    sqlBox.textContent = sql;
+  } catch (err) {
+    status.textContent = String(err.message || err);
+    status.className = 'status err';
+  }
+}
+
+function applyFilters() {
+  setBasemap($('basemap').value);
+  buildTables();
+  $('sql').value = defaultSQL();
+  runSQL();
+}
+
+function init() {
+  const status = $('status');
+  try {
+    if (!window.MORTALITY_DATA) throw new Error('Mortality data failed to load.');
+    if (!window.COUNTY_GEO || !window.STATE_GEO) throw new Error('Boundary GeoJSON failed to load.');
+    DATA = window.MORTALITY_DATA;
+    CAUSES = DATA.meta.causes;
+    CODES = DATA.meta.codes;
+    COUNTY_GEO = window.COUNTY_GEO;
+    STATE_GEO = window.STATE_GEO;
+    COUNTY_GEO.features.forEach((f) => { f.id = featureCountyFips(f); });
+
+    fillIndicators();
+    fillStates();
+    fillPresets();
+    if (window.MapStyleControls) MapStyleControls.fillPaletteSelect($('palette'), DEFAULT_PALETTE);
+    initMap();
+    buildTables();
+    if (window.SuperfundOverlay && window.SUPERFUND_NPL) {
+      sfOverlay = new SuperfundOverlay({
+        map,
+        mount: 'sf-mount',
+        getPageState: () => $('state').value,
+      });
+    }
+    if (window.GeochemSoilOverlay && window.GEOCHEM_SOIL_META) {
+      gcOverlay = new GeochemSoilOverlay({
+        map,
+        mount: 'gc-mount',
+        getPageState: () => $('state').value,
+      });
+    }
+    if (window.AirQualityOverlay && window.AIR_QUALITY_AQS) {
+      aqOverlay = new AirQualityOverlay({
+        map,
+        mount: 'aq-mount',
+        getPageState: () => $('state').value,
+      });
+    }
+    if (window.AtlasMapExport) {
+      AtlasMapExport.attach({
+        map,
+        mapEl: '#map',
+        buttonId: 'btn-export-map',
+        baseLayers,
+        filenamePrefix: 'usa-mortality-map',
+        getTitle: () => indLabel(),
+        getSource: () => `NIMHD HDPulse · ${DATA.meta.year_group} · age-adjusted deaths per 100,000`,
+        getBasemapKey: () => ($('basemap') && $('basemap').value) || 'osm',
+        setBasemapKey: (key) => { if ($('basemap')) $('basemap').value = key; setBasemap(key); },
+        getChoroplethGroup: () => choroplethGroup,
+        getOverlays: () => ({ sf: sfOverlay, gc: gcOverlay, aq: aqOverlay }),
+        overlays: { superfund: true, soil: true, air: true },
+      });
+    }
+
+    $('btn-apply').addEventListener('click', applyFilters);
+    $('btn-sql').addEventListener('click', runSQL);
+    $('indicator').addEventListener('change', () => { $('sql').value = defaultSQL(); });
+    document.querySelectorAll('input[name="maplevel"]').forEach((el) => {
+      el.addEventListener('change', () => { $('sql').value = defaultSQL(); });
+    });
+    $('state').addEventListener('change', () => { $('sql').value = defaultSQL(); });
+    $('basemap').addEventListener('change', () => setBasemap($('basemap').value));
+    $('palette') && $('palette').addEventListener('change', applyFilters);
+    applyFilters();
+    status.textContent = `Loaded ${DATA.meta.n_counties.toLocaleString()} counties · ${DATA.meta.year_group}.`;
+    status.className = 'status ok';
+  } catch (err) {
+    status.textContent = String(err.message || err);
+    status.className = 'status err';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

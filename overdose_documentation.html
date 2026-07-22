@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Overdose Mortality Documentation · USA-Health Data Atlas</title>
+<style>
+:root {
+  --ink: #0b1f2a; --panel: #ffffff; --rail: #0e3a4f; --accent: #1d7a8c;
+  --paper: #e8eef1; --hair: #c5d0d6; --steel: #5a6e78; --lake: #14707e;
+  --focus: #0e4f8b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--paper); color: var(--ink); line-height: 1.55;
+}
+a { color: var(--lake); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.banner {
+  background: linear-gradient(90deg, #071821 0%, #0e3a4f 55%, #14586f 100%);
+  color: #e8f2f5; border-bottom: 4px solid var(--accent);
+}
+.banner-inner { max-width: 1180px; margin: 0 auto; padding: 18px 20px 20px; }
+.banner-top { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.banner-copy { min-width: 0; flex: 1; }
+.banner-aside { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.banner-logo {
+  display: block; width: clamp(72px, 12vw, 110px); height: auto;
+  background: #fff; border-radius: 10px; padding: 5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+.explorer-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 520px; }
+.explorer-nav a {
+  display: inline-block; background: rgba(255,255,255,.08); color: #e8f2f5;
+  text-decoration: none; border: 1px solid rgba(255,255,255,.22);
+  padding: 6px 10px; font-size: 12px; white-space: nowrap;
+}
+.explorer-nav a:hover { background: rgba(255,255,255,.14); }
+.explorer-nav a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.eyebrow {
+  font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+  letter-spacing: .14em; text-transform: uppercase; color: #8fb6bd;
+}
+h1.page-title { margin: 8px 0 6px; font-size: clamp(26px, 3.5vw, 38px); line-height: 1.08; font-weight: 750; }
+h1.page-title span { color: #7fcad4; }
+.sub { color: #b9c9ce; font-size: 14px; max-width: 820px; }
+.layout {
+  max-width: 1180px; margin: 0 auto; padding: 14px 16px 48px;
+  display: grid; grid-template-columns: 240px 1fr; gap: 18px;
+}
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.toc {
+  position: sticky; top: 12px; align-self: start;
+  background: var(--panel); border: 1px solid var(--hair); padding: 14px;
+}
+@media (max-width: 900px) { .toc { position: static; } }
+.toc h2 {
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--steel); margin: 0 0 10px; font-family: ui-monospace, Consolas, monospace;
+}
+.toc ul { list-style: none; }
+.toc li { margin-bottom: 6px; }
+.toc a { text-decoration: none; font-size: 13px; color: var(--rail); font-weight: 600; }
+.toc a:hover { color: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.btn {
+  display: inline-block; background: var(--rail); color: #fff; text-decoration: none;
+  padding: 8px 12px; font-size: 13px; font-weight: 650;
+}
+.btn:hover { background: var(--accent); }
+.btn.ghost { background: transparent; color: var(--rail); border: 1px solid var(--hair); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.content { min-width: 0; }
+.doc-section {
+  background: var(--panel); border: 1px solid var(--hair); padding: 20px 22px 28px;
+  margin-bottom: 16px;
+}
+.doc-section h1 { font-size: 1.45rem; margin: 0 0 .6em; line-height: 1.2; }
+.doc-section h2 {
+  font-size: 1.15rem; margin: 1.4em 0 .45em; padding-bottom: 4px;
+  border-bottom: 1px solid var(--hair); line-height: 1.25;
+}
+.doc-section h3 { font-size: 1rem; margin: 1.1em 0 .35em; }
+.doc-section p, .doc-section ul, .doc-section ol { margin: .55em 0; }
+.doc-section li { margin: .2em 0 .2em 1.2em; }
+.doc-section table {
+  width: 100%; border-collapse: collapse; font-size: 13px; margin: .8em 0;
+}
+.doc-section th, .doc-section td {
+  border: 1px solid var(--hair); padding: 7px 9px; text-align: left; vertical-align: top;
+}
+.doc-section th { background: #0e3a4f; color: #fff; font-weight: 600; }
+.doc-section tr:nth-child(even) td { background: #f4f8f8; }
+.doc-section code {
+  font-family: ui-monospace, Consolas, monospace; font-size: .9em;
+  background: #eef5f7; padding: 1px 4px;
+}
+.doc-section pre {
+  background: #14262e; color: #b9e0e6; padding: 12px 14px; overflow: auto;
+  font-size: 12px; line-height: 1.45; margin: .8em 0;
+}
+.doc-section pre code { background: transparent; padding: 0; color: inherit; }
+.doc-section hr { border: none; border-top: 1px solid var(--hair); margin: 1.5em 0; }
+.doc-section em { color: #33474f; }
+.footer {
+  max-width: 1180px; margin: 0 auto; padding: 0 16px 36px;
+  font-size: 12px; color: var(--steel);
+}
+</style>
+</head>
+<body>
+  <header class="banner">
+    <div class="banner-inner">
+      <div class="banner-top">
+        <div class="banner-copy">
+          <div class="eyebrow">USA-Health Data Atlas · CDC / NCHS</div>
+          <h1 class="page-title">Overdose Mortality <span>Documentation</span></h1>
+          <p class="sub">
+            Dataset documentation for county-level drug-overdose and opioid-related mortality
+            in the contiguous United States — live CDC/NCHS model-based estimates (2003–2021),
+            VSRR provisional county counts (2020→), and VSRR state opioid totals allocated
+            to counties (2020→). Includes synthetic parquet panel notes for offline development.
+          </p>
+        </div>
+        <div class="banner-aside">
+          <img class="banner-logo" src="upatta_logo.png" alt="Upatta Data Analytics" width="110" height="110"/>
+          <nav class="explorer-nav" aria-label="Atlas navigation">
+            <a href="index.html">Home</a>
+            <a href="usa_overdose_mortality.html">Overdose Mortality</a>
+            <a class="active" href="overdose_documentation.html" aria-current="page">Documentation</a>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="toc" aria-label="Table of contents">
+      <h2>On this page</h2>
+      <ul>
+        <li><a href="#read-this-first-explorer-vs-parquet-panel">Read this first — explorer vs. parquet panel</a></li>
+        <li><a href="#case-definitions-icd-10">Case definitions (ICD-10)</a></li>
+        <li><a href="#data-sources">Data sources</a></li>
+        <li><a href="#atlas-schema-per-tab">Atlas schema (per tab)</a></li>
+        <li><a href="#synthetic-parquet-schema-full-panel">Synthetic parquet schema (full panel)</a></li>
+        <li><a href="#source-layers">Source layers</a></li>
+        <li><a href="#opioid-county-allocation-explorer">Opioid county allocation (explorer)</a></li>
+        <li><a href="#suppression-semantics">Suppression semantics</a></li>
+        <li><a href="#synthetic-generation-parquet-only">Synthetic generation (parquet only)</a></li>
+        <li><a href="#usage">Usage</a></li>
+        <li><a href="#caveats-and-limitations">Caveats and limitations</a></li>
+        <li><a href="#file-manifest">File manifest</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+      <div class="actions">
+        <a class="btn" href="usa_overdose_mortality.html">Open Overdose Explorer</a>
+        <a class="btn ghost" href="https://www.cdc.gov/nchs/data-visualization/drug-poisoning-mortality/" target="_blank" rel="noopener">NCHS visualization</a>
+        <a class="btn ghost" href="https://data.cdc.gov/National-Center-for-Health-Statistics/VSRR-Provisional-County-Level-Drug-Overdose-Death-Counts/gb4e-yj24" target="_blank" rel="noopener">Provisional counts</a>
+      </div>
+    </aside>
+    <main class="content">
+      <article class="doc-section" id="overdose-timeseries"><h1>CONUS County-Level Drug Overdose &amp; Opioid Mortality — Dataset Documentation</h1>
+<p>County-level <strong>drug-overdose and opioid-related mortality</strong> for the <strong>contiguous
+United States (48 states + DC)</strong>. The <strong>USA Overdose Mortality</strong> explorer
+(<code>usa_overdose_mortality.html</code>) maps three live CDC/NCHS source layers; a separate
+synthetic long-format panel (<code>conus_overdose_timeseries.parquet</code>) remains available
+for offline pipeline development and SQL prototyping.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Geographic scope</td>
+<td>Contiguous US — ~3,108 counties, 48 states + DC (excludes AK, HI, territories)</td>
+</tr>
+<tr>
+<td>Explorer tabs</td>
+<td>Model-based (2003–2021), Provisional (2020→), Opioid allocated (2020→)</td>
+</tr>
+<tr>
+<td>Categories</td>
+<td><code>drug_overdose_all</code>, <code>opioid</code></td>
+</tr>
+<tr>
+<td>Denominator reference</td>
+<td><code>conus_counties.csv</code> (FIPS, name, 2018 population)</td>
+</tr>
+<tr>
+<td>Atlas build script</td>
+<td><code>scripts/build_overdose_data.py</code></td>
+</tr>
+<tr>
+<td>Pipeline (synthetic + live)</td>
+<td><code>overdose_mortality_pipeline.py</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="read-this-first-explorer-vs-parquet-panel">Read this first — explorer vs. parquet panel</h2>
+<h3>USA Overdose Mortality explorer (live CDC data)</h3>
+<p>The interactive atlas pulls <strong>observed CDC/NCHS data</strong> at build time:</p>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>CDC source</th>
+<th>Dataset ID</th>
+<th>Window</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model-based rates</td>
+<td><a href="https://www.cdc.gov/nchs/data-visualization/drug-poisoning-mortality/">NCHS Drug Poisoning Mortality visualization</a></td>
+<td><a href="https://data.cdc.gov/National-Center-for-Health-Statistics/NCHS-Drug-Poisoning-Mortality-by-County-United-Sta/rpvx-m2md"><code>rpvx-m2md</code></a></td>
+<td>2003–2021</td>
+<td>Hierarchical Bayesian posterior median rates per 100k; includes 95% CI and urban–rural class</td>
+</tr>
+<tr>
+<td>Provisional counts</td>
+<td>VSRR provisional county counts</td>
+<td><a href="https://data.cdc.gov/National-Center-for-Health-Statistics/VSRR-Provisional-County-Level-Drug-Overdose-Death-Counts/gb4e-yj24"><code>gb4e-yj24</code></a></td>
+<td>2020→</td>
+<td>12-month-ending counts; December month-ending used per year; 1–9 suppressed</td>
+</tr>
+<tr>
+<td>Opioid (county-estimated)</td>
+<td>VSRR state opioid + county provisional share</td>
+<td><a href="https://data.cdc.gov/National-Center-for-Health-Statistics/VSRR-Provisional-Drug-Overdose-Death-Counts/xkb8-kh2a"><code>xkb8-kh2a</code></a> + <code>gb4e-yj24</code></td>
+<td>2020→</td>
+<td>State opioid totals allocated to counties proportionally — <strong>not</strong> observed WONDER county counts</td>
+</tr>
+</tbody>
+</table>
+<p>Rebuild atlas assets (requires internet for <code>--refresh-cdc</code>):</p>
+<pre><code class="language-bash">python3 scripts/build_overdose_data.py              # use cached CDC parquets
+python3 scripts/build_overdose_data.py --refresh-cdc  # re-download from CDC
+python3 scripts/build_overdose_documentation.py     # regenerate overdose_documentation.html
+</code></pre>
+<h3>Synthetic parquet panel (offline development)</h3>
+<p><code>conus_overdose_timeseries.parquet</code> is a tidy long-format panel (1999–2023) where
+<strong>mortality values are synthetic</strong> (<code>SYNTHETIC_DEMO</code>), generated by
+<code>overdose_mortality_pipeline.py</code> so analysis code can be developed against a
+realistic schema. Use the live CDC pull in the explorer or
+<code>build_timeseries(use_synthetic=False)</code> for authoritative figures.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Years</td>
+<td>1999–2023 (25 years)</td>
+</tr>
+<tr>
+<td>Grain</td>
+<td>one row per county × year × category × source</td>
+</tr>
+<tr>
+<td>Rows</td>
+<td>233,100</td>
+</tr>
+<tr>
+<td>Files</td>
+<td><code>conus_overdose_timeseries.parquet</code> (2.8 MB), <code>.csv</code> (41.8 MB)</td>
+</tr>
+</tbody>
+</table>
+<p>Parquet is recommended: it preserves nullable <code>deaths</code> and <code>suppressed</code> types that
+CSV silently coerces.</p>
+<hr />
+<h2 id="case-definitions-icd-10">Case definitions (ICD-10)</h2>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>drug_overdose_all</code></td>
+<td>Underlying cause X40–X44, X60–X64, X85, Y10–Y14 (drug poisoning)</td>
+</tr>
+<tr>
+<td><code>opioid</code></td>
+<td>The above <strong>with</strong> contributing cause T40.0–T40.4, T40.6 (opioid-involved)</td>
+</tr>
+</tbody>
+</table>
+<p>NCHS model-based and VSRR provisional sources follow these ICD-10 definitions per
+<a href="https://www.cdc.gov/nchs/data-visualization/drug-poisoning-mortality/">CDC technical notes</a>.</p>
+<hr />
+<h2 id="data-sources">Data sources</h2>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Provider / endpoint</th>
+<th>Level &amp; window</th>
+<th>Used in explorer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NCHS county model-based</td>
+<td><a href="https://www.cdc.gov/nchs/data-visualization/drug-poisoning-mortality/">Drug Poisoning Mortality visualization</a> · <a href="https://data.cdc.gov/National-Center-for-Health-Statistics/NCHS-Drug-Poisoning-Mortality-by-County-United-Sta/rpvx-m2md"><code>rpvx-m2md</code></a></td>
+<td>County, 2003–2021, model-based rate + population</td>
+<td><strong>Yes</strong> — model-based tab</td>
+</tr>
+<tr>
+<td>NCHS county model-based (legacy)</td>
+<td><a href="https://data.cdc.gov/National-Center-for-Health-Statistics/NCHS-Drug-Poisoning-Mortality-by-County-United-Sta/pbkm-d27e"><code>pbkm-d27e</code></a></td>
+<td>County, 1999–2015, <strong>binned</strong> age-adjusted rate</td>
+<td>Pipeline only (superseded by <code>rpvx-m2md</code>)</td>
+</tr>
+<tr>
+<td>VSRR provisional county</td>
+<td><a href="https://data.cdc.gov/National-Center-for-Health-Statistics/VSRR-Provisional-County-Level-Drug-Overdose-Death-Counts/gb4e-yj24"><code>gb4e-yj24</code></a></td>
+<td>County, 2020→, 12-month-ending counts (1–9 suppressed)</td>
+<td><strong>Yes</strong> — provisional tab</td>
+</tr>
+<tr>
+<td>VSRR state opioid</td>
+<td><a href="https://data.cdc.gov/National-Center-for-Health-Statistics/VSRR-Provisional-Drug-Overdose-Death-Counts/xkb8-kh2a"><code>xkb8-kh2a</code></a></td>
+<td><strong>State</strong>, opioid (T40.0–T40.4, T40.6)</td>
+<td><strong>Yes</strong> — opioid tab (state totals → county allocation)</td>
+</tr>
+<tr>
+<td>CDC WONDER</td>
+<td><a href="https://wonder.cdc.gov">Multiple Cause of Death</a></td>
+<td>County, opioid-specific, &lt;10 suppressed</td>
+<td>Not automated (API restricts county queries)</td>
+</tr>
+<tr>
+<td>Census / ACS</td>
+<td>US Census</td>
+<td>County population denominators</td>
+<td>Denominators in <code>conus_counties.csv</code></td>
+</tr>
+</tbody>
+</table>
+<p>The current model-based atlas layer uses <strong>posterior median model-based death rates</strong>
+from <code>rpvx-m2md</code> (INLA hierarchical Bayesian models with spatial and temporal random
+effects). An older pipeline connector (<code>pbkm-d27e</code>) used <em>binned</em> age-adjusted rate
+bands; that file is retained for compatibility but is not what the explorer maps.</p>
+<hr />
+<h2 id="atlas-schema-per-tab">Atlas schema (per tab)</h2>
+<p>Each explorer tab exposes a compact column set in <code>assets/overdose_*_data.js</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fips</code></td>
+<td>string(5)</td>
+<td>County FIPS, zero-padded</td>
+</tr>
+<tr>
+<td><code>state_abbr</code></td>
+<td>string</td>
+<td>Two-letter state code</td>
+</tr>
+<tr>
+<td><code>county_name</code></td>
+<td>string</td>
+<td>County and state abbreviation</td>
+</tr>
+<tr>
+<td><code>year</code></td>
+<td>int</td>
+<td>Calendar year</td>
+</tr>
+<tr>
+<td><code>category</code></td>
+<td>string</td>
+<td><code>drug_overdose_all</code> or <code>opioid</code></td>
+</tr>
+<tr>
+<td><code>deaths</code></td>
+<td>float</td>
+<td>Death count (derived or observed; <code>null</code> when suppressed)</td>
+</tr>
+<tr>
+<td><code>population</code></td>
+<td>int</td>
+<td>County population denominator</td>
+</tr>
+<tr>
+<td><code>crude_rate_per_100k</code></td>
+<td>float</td>
+<td><code>deaths / population × 100,000</code> (or model-based rate)</td>
+</tr>
+<tr>
+<td><code>pct_of_population</code></td>
+<td>float</td>
+<td><code>deaths / population × 100</code></td>
+</tr>
+<tr>
+<td><code>suppressed</code></td>
+<td>bool</td>
+<td><code>true</code> when the count is withheld (provisional 1–9)</td>
+</tr>
+<tr>
+<td><code>lower95ci</code>, <code>upper95ci</code></td>
+<td>float</td>
+<td>Model-based tab only — Bayesian credible interval bounds</td>
+</tr>
+<tr>
+<td><code>urbanrural</code></td>
+<td>string</td>
+<td>Model-based tab only — NCHS 2013 urban–rural classification</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="synthetic-parquet-schema-full-panel">Synthetic parquet schema (full panel)</h2>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fips</code></td>
+<td>string(5)</td>
+<td>County FIPS, zero-padded (e.g., <code>36109</code> = Tompkins County, NY)</td>
+</tr>
+<tr>
+<td><code>county_name</code></td>
+<td>string</td>
+<td>County and state abbreviation</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>string</td>
+<td>Full state name</td>
+</tr>
+<tr>
+<td><code>state_abbr</code></td>
+<td>string</td>
+<td>Two-letter state code</td>
+</tr>
+<tr>
+<td><code>year</code></td>
+<td>Int64</td>
+<td>1999–2023</td>
+</tr>
+<tr>
+<td><code>category</code></td>
+<td>string</td>
+<td><code>drug_overdose_all</code> or <code>opioid</code></td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>string</td>
+<td>Provider tag; <code>(SYNTHETIC_DEMO)</code> marks modeled rows</td>
+</tr>
+<tr>
+<td><code>deaths</code></td>
+<td>float</td>
+<td>Overdose deaths; <code>NaN</code> when suppressed</td>
+</tr>
+<tr>
+<td><code>population</code></td>
+<td>int</td>
+<td>County population denominator</td>
+</tr>
+<tr>
+<td><code>crude_rate_per_100k</code></td>
+<td>float</td>
+<td><code>deaths / population × 100,000</code></td>
+</tr>
+<tr>
+<td><code>age_adjusted_rate_per_100k</code></td>
+<td>float</td>
+<td>Age-standardized rate (model-based source only)</td>
+</tr>
+<tr>
+<td><code>pct_of_population</code></td>
+<td>float</td>
+<td><code>deaths / population × 100</code></td>
+</tr>
+<tr>
+<td><code>suppressed</code></td>
+<td>bool</td>
+<td><code>true</code> when the count is suppressed</td>
+</tr>
+<tr>
+<td><code>notes</code></td>
+<td>string</td>
+<td>Provenance and caveat string</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="source-layers">Source layers</h2>
+<h3>Explorer (live CDC)</h3>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model-based</td>
+<td>Observed NCHS county model-based rates (<code>rpvx-m2md</code>), 2003–2021</td>
+</tr>
+<tr>
+<td>Provisional</td>
+<td>Observed VSRR 12-month-ending county counts (<code>gb4e-yj24</code>), 2020→</td>
+</tr>
+<tr>
+<td>Opioid</td>
+<td>State VSRR opioid deaths allocated to counties by provisional share</td>
+</tr>
+</tbody>
+</table>
+<h3>Synthetic parquet (demo panel)</h3>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Source tag</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>drug_overdose_all</code></td>
+<td><code>NCHS_County_ModelBased (SYNTHETIC_DEMO)</code></td>
+<td>Age-adjusted rate + derived count</td>
+</tr>
+<tr>
+<td><code>drug_overdose_all</code></td>
+<td><code>NCHS_Provisional_County (SYNTHETIC_DEMO)</code></td>
+<td>12-month-ending count (1–9 suppressed)</td>
+</tr>
+<tr>
+<td><code>opioid</code></td>
+<td><code>CDC_WONDER (SYNTHETIC_DEMO)</code></td>
+<td>Opioid-specific county count (&lt;10 suppressed)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="opioid-county-allocation-explorer">Opioid county allocation (explorer)</h2>
+<p>County-level opioid-specific counts are <strong>not published</strong> on data.cdc.gov and CDC
+WONDER&rsquo;s public API does not support automated county-level queries. The opioid tab
+therefore:</p>
+<ol>
+<li>Pulls <strong>state</strong> 12-month-ending opioid death totals from <code>xkb8-kh2a</code> (indicator:
+   <code>Opioids (T40.0-T40.4,T40.6)</code>), using December values per year.</li>
+<li>Pulls <strong>county</strong> provisional all-drug overdose counts from <code>gb4e-yj24</code> (unsuppressed
+   cells only).</li>
+<li>Allocates each state&rsquo;s opioid total to counties in proportion to each county&rsquo;s
+   share of the state&rsquo;s provisional all-drug overdose deaths:</li>
+</ol>
+<pre><code class="language-text">county_opioid_est = state_opioid × (county_provisional_all / sum(county_provisional_all in state))
+</code></pre>
+<p>This preserves state opioid totals and yields plausible <strong>relative</strong> county patterns,
+but is an estimate — not an observed county opioid count.</p>
+<hr />
+<h2 id="suppression-semantics">Suppression semantics</h2>
+<p><strong>Provisional tab (<code>gb4e-yj24</code>):</strong> NCHS suppresses counts of 1–9. Suppressed
+county-years are flagged (<code>suppressed = true</code>) and excluded from the choropleth.
+Roughly half of county-years may be suppressed; do not sum suppressed cells for totals.</p>
+<p><strong>Model-based tab (<code>rpvx-m2md</code>):</strong> Rates are model-based estimates with credible
+intervals; no small-count suppression, but values may differ from WONDER observed counts.</p>
+<p><strong>Opioid tab:</strong> Only counties with unsuppressed provisional all-drug counts receive
+an allocated opioid estimate.</p>
+<hr />
+<h2 id="synthetic-generation-parquet-only">Synthetic generation (parquet only)</h2>
+<p>When <code>use_synthetic=True</code>, expected deaths for a county × year are drawn as a
+Poisson variable around an intensity curve calibrated to the real US epidemic:</p>
+<ul>
+<li>Rising baseline across 1999–2023.</li>
+<li>Fentanyl-era acceleration from 2013 onward.</li>
+<li>Pandemic bump from 2020 onward.</li>
+<li>Per-county heterogeneity via a log-normal place effect.</li>
+<li>Rising opioid share of overdose deaths over time.</li>
+<li>Registry suppression (1–9) applied to the provisional-count layer.</li>
+<li>Reproducibility: fixed seed (<code>207</code>).</li>
+</ul>
+<p>The generator targets realistic <em>shape</em>, not truth.</p>
+<hr />
+<h2 id="usage">Usage</h2>
+<h3>Atlas / cached CDC parquets</h3>
+<pre><code class="language-python">import pandas as pd
+
+model = pd.read_parquet(&quot;conus_overdose_model_based_cdc.parquet&quot;)
+prov  = pd.read_parquet(&quot;conus_overdose_provisional_cdc.parquet&quot;)
+opi   = pd.read_parquet(&quot;conus_overdose_opioid_cdc.parquet&quot;)
+
+# Tompkins County, NY — model-based trajectory
+tompkins = model.query(&quot;fips == '36109'&quot;).sort_values(&quot;year&quot;)
+</code></pre>
+<h3>Synthetic long panel</h3>
+<pre><code class="language-python">df = pd.read_parquet(&quot;conus_overdose_timeseries.parquet&quot;)
+
+wide = (df.query(&quot;category == 'drug_overdose_all'&quot;)
+          .pivot_table(index=[&quot;fips&quot;, &quot;year&quot;], columns=&quot;source&quot;,
+                       values=&quot;deaths&quot;))
+</code></pre>
+<h3>Live CDC pull (pipeline)</h3>
+<pre><code class="language-python">from overdose_mortality_pipeline import PipelineConfig, build_timeseries
+
+cfg = PipelineConfig(states=None, conus_only=True, year_min=1999, year_max=2023)
+real = build_timeseries(cfg, use_synthetic=False)  # needs internet
+</code></pre>
+<hr />
+<h2 id="caveats-and-limitations">Caveats and limitations</h2>
+<ul>
+<li><strong>Source seam ~2019–2021.</strong> Model-based estimates end in 2021; provisional counts
+  begin in 2020. Do not treat these as one continuous series without reconciliation.</li>
+<li><strong>Opioid county tab is estimated</strong>, not WONDER-observed. Use for relative geography,
+  not exact county opioid totals.</li>
+<li><strong>Don&rsquo;t sum suppressed provisional cells</strong> — they undercount.</li>
+<li><strong>Model-based rates are estimates</strong> from Bayesian models; credible intervals are
+  provided on the model-based tab.</li>
+<li><strong>Population denominators</strong> in the explorer use <code>conus_counties.csv</code> (2018 baseline)
+  for provisional and opioid crude rates; model-based tab uses population from CDC.</li>
+<li><strong>CONUS only.</strong> Alaska, Hawaii, and territories are excluded by design.</li>
+<li><strong>Synthetic parquet</strong> remains for offline development; the explorer uses live CDC data.</li>
+</ul>
+<hr />
+<h2 id="file-manifest">File manifest</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>conus_overdose_model_based_cdc.parquet</code></td>
+<td>Cached CDC model-based county estimates (<code>rpvx-m2md</code>)</td>
+</tr>
+<tr>
+<td><code>conus_overdose_provisional_cdc.parquet</code></td>
+<td>Cached CDC provisional county counts (<code>gb4e-yj24</code>)</td>
+</tr>
+<tr>
+<td><code>conus_overdose_opioid_cdc.parquet</code></td>
+<td>Cached county opioid estimates (state allocation)</td>
+</tr>
+<tr>
+<td><code>conus_overdose_timeseries.parquet</code></td>
+<td>Synthetic long-format panel (offline dev)</td>
+</tr>
+<tr>
+<td><code>conus_overdose_timeseries.csv</code></td>
+<td>Same synthetic data as CSV</td>
+</tr>
+<tr>
+<td><code>conus_counties.csv</code></td>
+<td>County FIPS, names, 2018 population</td>
+</tr>
+<tr>
+<td><code>overdose_mortality_pipeline.py</code></td>
+<td>Pipeline: live CDC connectors + synthetic generator</td>
+</tr>
+<tr>
+<td><code>CONUS_Overdose_Timeseries_Data.md</code></td>
+<td>This document</td>
+</tr>
+<tr>
+<td><code>../../scripts/build_overdose_data.py</code></td>
+<td>Build atlas JS assets from CDC caches</td>
+</tr>
+<tr>
+<td><code>../../scripts/build_overdose_documentation.py</code></td>
+<td>Build <code>overdose_documentation.html</code></td>
+</tr>
+<tr>
+<td><code>../../assets/overdose_model_based_data.js</code></td>
+<td>Atlas asset — model-based tab</td>
+</tr>
+<tr>
+<td><code>../../assets/overdose_provisional_data.js</code></td>
+<td>Atlas asset — provisional tab</td>
+</tr>
+<tr>
+<td><code>../../assets/overdose_opioid_wonder_data.js</code></td>
+<td>Atlas asset — opioid tab</td>
+</tr>
+<tr>
+<td><code>../../usa_overdose_mortality.html</code></td>
+<td>Interactive county/state explorer</td>
+</tr>
+<tr>
+<td><code>../../overdose_documentation.html</code></td>
+<td>Rendered documentation page</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="references">References</h2>
+<ul>
+<li>CDC / NCHS. <a href="https://www.cdc.gov/nchs/data-visualization/drug-poisoning-mortality/">Drug Poisoning Mortality in the United States, 2003–2021</a> (visualization gallery).</li>
+<li>CDC / NCHS. <em>NCHS Drug Poisoning Mortality by County</em> (<a href="https://data.cdc.gov/National-Center-for-Health-Statistics/NCHS-Drug-Poisoning-Mortality-by-County-United-Sta/rpvx-m2md"><code>rpvx-m2md</code></a>).</li>
+<li>CDC / NCHS. <em>VSRR Provisional County-Level Drug Overdose Death Counts</em> (<a href="https://data.cdc.gov/National-Center-for-Health-Statistics/VSRR-Provisional-County-Level-Drug-Overdose-Death-Counts/gb4e-yj24"><code>gb4e-yj24</code></a>).</li>
+<li>CDC / NCHS. <em>VSRR Provisional Drug Overdose Death Counts by drug class</em> (<a href="https://data.cdc.gov/National-Center-for-Health-Statistics/VSRR-Provisional-Drug-Overdose-Death-Counts/xkb8-kh2a"><code>xkb8-kh2a</code></a>).</li>
+<li>CDC WONDER. <a href="https://wonder.cdc.gov"><em>Multiple Cause of Death</em></a>.</li>
+<li>US Census Bureau. County population estimates.</li>
+</ul>
+<p><em>Drug-overdose deaths are identified by ICD-10 underlying-cause codes X40–X44,
+X60–X64, X85, and Y10–Y14; opioid involvement by contributing codes T40.0–T40.4
+and T40.6.</em></p></article>
+    </main>
+  </div>
+
+  <footer class="footer">
+  Generated from <code>data/overdose_mortality_rate/CONUS_Overdose_Timeseries_Data.md</code>.
+  The USA Overdose Mortality explorer uses live CDC/NCHS sources; the synthetic parquet
+  panel remains for offline pipeline development.
+  </footer>
+</body>
+</html>

@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>USA-Health Data Atlas</title>
+<style>
+:root {
+  --ink: #0b1f2a;
+  --panel: #ffffff;
+  --rail: #0e3a4f;
+  --accent: #1d7a8c;
+  --paper: #e8eef1;
+  --hair: #c5d0d6;
+  --steel: #5a6e78;
+  --lake: #14707e;
+  --focus: #0e4f8b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background:
+    radial-gradient(1200px 500px at 10% -10%, #d7e8ea 0%, transparent 55%),
+    linear-gradient(180deg, #e8eef1 0%, #dfe7ea 100%);
+  color: var(--ink);
+  line-height: 1.5;
+}
+a { color: var(--lake); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.banner {
+  background: linear-gradient(90deg, #071821 0%, #0e3a4f 55%, #14586f 100%);
+  color: #e8f2f5;
+  border-bottom: 4px solid var(--accent);
+}
+.banner-inner { max-width: 1320px; margin: 0 auto; padding: 28px 24px 32px; }
+.banner-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.banner-copy { min-width: 0; flex: 1; }
+.banner-aside {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.banner-logo {
+  display: block;
+  width: clamp(88px, 14vw, 128px);
+  height: auto;
+  background: #fff;
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
+}
+.explorer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-width: 560px;
+}
+.explorer-nav a {
+  display: inline-block;
+  background: rgba(255,255,255,.08);
+  color: #e8f2f5;
+  text-decoration: none;
+  border: 1px solid rgba(255,255,255,.22);
+  padding: 6px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.explorer-nav a:hover { background: rgba(255,255,255,.14); }
+.explorer-nav a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 720px) {
+  .banner-aside { width: 100%; align-items: stretch; }
+  .banner-logo { align-self: flex-end; }
+  .explorer-nav { justify-content: flex-start; max-width: none; }
+}
+@media (max-width: 640px) {
+  .banner-top { flex-direction: column-reverse; align-items: flex-end; }
+  .banner-logo { width: 96px; }
+}
+.eyebrow {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: #8fb6bd;
+}
+h1 {
+  margin: 10px 0 8px;
+  font-size: clamp(34px, 5vw, 52px);
+  line-height: 1.05;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+.sub { color: #b9c9ce; font-size: 15px; max-width: 820px; }
+.banner-contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,.14);
+}
+.banner-contact-label {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #8fb6bd;
+  margin-right: 2px;
+}
+.banner-contact a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #e8f2f5;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 6px;
+  background: rgba(255,255,255,.06);
+  transition: background .15s ease, border-color .15s ease;
+}
+.banner-contact a:hover {
+  background: rgba(255,255,255,.14);
+  border-color: rgba(255,255,255,.35);
+  color: #fff;
+}
+.banner-contact a svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: currentColor;
+}
+.banner-contact a .contact-text { white-space: nowrap; }
+@media (max-width: 520px) {
+  .banner-contact a .contact-text { font-size: 12px; }
+}
+
+main { max-width: 1180px; margin: 0 auto; padding: 28px 24px 60px; }
+.intro {
+  margin-bottom: 28px;
+  max-width: 900px;
+  color: #243841;
+  font-size: 15.5px;
+}
+.intro strong { color: var(--ink); }
+.intro-lead {
+  font-size: 17px;
+  line-height: 1.55;
+  color: #1a323c;
+  margin-bottom: 14px;
+}
+.intro-list {
+  margin: 14px 0 0;
+  padding-left: 1.25em;
+}
+.intro-list li { margin: .35em 0; }
+.intro-list strong { color: var(--rail); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+.card {
+  background: var(--panel);
+  border: 1px solid var(--hair);
+  border-top: 3px solid var(--accent);
+  padding: 16px 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 220px;
+}
+.card.featured { border-top-color: #c9930f; grid-column: 1 / -1; }
+@media (min-width: 900px) {
+  .card.featured {
+    grid-column: auto;
+    background:
+      linear-gradient(135deg, rgba(201,147,15,.08), transparent 55%),
+      #fff;
+  }
+}
+.card h2 { font-size: 18px; line-height: 1.25; }
+.tag {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+.card p { color: #33474f; font-size: 14px; flex: 1; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.btn {
+  display: inline-block;
+  background: var(--rail);
+  color: #fff;
+  text-decoration: none;
+  border: none;
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.btn:hover { background: var(--accent); }
+.btn.ghost {
+  background: transparent;
+  color: var(--rail);
+  border: 1px solid var(--hair);
+}
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: #b88912; }
+.btn.primary:hover { background: #9a7310; }
+
+.footer {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px 40px;
+  font-size: 12px;
+  color: var(--steel);
+}
+</style>
+</head>
+<body>
+  <header class="banner">
+    <div class="banner-inner">
+      <div class="banner-top">
+        <div class="banner-copy">
+          <div class="eyebrow">National health data portal · Upatta Data Analytics</div>
+          <h1>USA-Health Data Atlas</h1>
+          <p class="sub">
+            An open, browser-based dashboard for exploring U.S. county and state health,
+            demographic, and contextual data — interactive maps, SQL summarization, trend
+            charts, and a cross-dataset modeling workbench, all joined on county FIPS.
+          </p>
+          <div class="banner-contact" aria-label="Author contact">
+            <span class="banner-contact-label">Connect</span>
+            <a href="https://github.com/zia207" target="_blank" rel="noopener noreferrer" title="GitHub — zia207">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.1 3.29 9.43 7.86 10.97.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.53-1.35-1.29-1.71-1.29-1.71-1.06-.72.08-.71.08-.71 1.17.08 1.79 1.2 1.79 1.2 1.04 1.78 2.73 1.27 3.4.97.11-.76.41-1.27.74-1.56-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 2.87-.39c.97 0 1.95.13 2.87.39 2.19-1.49 3.15-1.18 3.15-1.18.62 1.58.23 2.75.11 3.04.73.81 1.18 1.84 1.18 3.1 0 4.43-2.7 5.41-5.28 5.69.42.36.79 1.07.79 2.16 0 1.56-.01 2.82-.01 3.2 0 .31.21.67.8.56A10.52 10.52 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>
+              <span class="contact-text">GitHub</span>
+            </a>
+            <a href="https://linkedin.com/in/zia-ahmed207" target="_blank" rel="noopener noreferrer" title="LinkedIn — Zia Ahmed">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.13 1.45-2.13 2.94v5.67H9.35V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"/></svg>
+              <span class="contact-text">LinkedIn</span>
+            </a>
+            <a href="mailto:zia207@gmail.com" title="Email — zia207@gmail.com">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5L4 8V6l8 5 8-5v2z"/></svg>
+              <span class="contact-text">zia207@gmail.com</span>
+            </a>
+          </div>
+        </div>
+        <div class="banner-aside">
+          <img class="banner-logo" src="upatta_logo.png" alt="Upatta Data Analytics" width="128" height="128"/>
+          <nav class="explorer-nav" aria-label="Atlas navigation">
+            <a class="active" href="index.html" aria-current="page">Home</a>
+            <a href="usa_county_health_rankings.html">County Health Rankings</a>
+            <a href="usa_health_experience.html">Place-based Health Experience</a>
+            <a href="usa_svi.html">Social Vulnerability Index</a>
+            <a href="usa_mortality_data.html">USA Mortality Data</a>
+            <a href="usa_cancer_atlas.html">USA Cancer Atlas</a>
+            <a href="usa_overdose_mortality.html">Overdose Mortality</a>
+            <a href="usa_census_demograpy.html">Census Demography</a>
+            <a href="usa_religion_census.html">Religion Census</a>
+            <a href="usa_presidential_election_data.html">Presidential Elections</a>
+            <a href="eda_model_development.html">EDA &amp; Models</a>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="intro">
+      <p class="intro-lead">
+        <strong>USA-Health Data Atlas</strong> is a unified portal for public-health and
+        place-based research at the county and state level. Instead of juggling separate
+        portals, spreadsheets, and APIs, you can browse authoritative national datasets
+        in one consistent interface — with choropleth maps, KPI summaries, SQL queries,
+        and optional overlays (Superfund sites, air quality, soil geochemistry).
+      </p>
+      <p>
+        Each built-in explorer loads curated county-level data from sources such as
+        County Health Rankings, CDC PLACES, CDC/ATSDR SVI, NCI State Cancer Profiles,
+        NCHS overdose mortality, NIMHD HDPulse mortality, U.S. Census PEP demography,
+        the Religion Census (RCMS/USRC), and MIT Election Lab presidential returns.
+        The <strong>EDA &amp; Model Development</strong> workbench joins these layers on
+        <code>fips</code> so you can build modeling dataframes, run descriptive statistics,
+        spatial analyses, and prototype machine-learning models in the browser.
+      </p>
+      <ul class="intro-list">
+        <li><strong>Map</strong> — state, county, or tract views with adjustable palettes and basemaps</li>
+        <li><strong>Query</strong> — AlaSQL tables for filtering, ranking, and aggregation</li>
+        <li><strong>Model</strong> — pipeline from outcome <em>Y</em> and feature <em>X</em> selection to exportable CSV</li>
+        <li><strong>Document</strong> — in-page dataset guides linked from each explorer</li>
+      </ul>
+      <p style="margin-top:14px">
+        Open any card below to start exploring. Maintained by
+        <a href="https://github.com/zia207">Zia Ahmed</a> (University at Buffalo).
+      </p>
+    </div>
+
+    <section class="grid" aria-label="Health data sources">
+      <article class="card featured">
+        <div class="tag">Built-in explorer</div>
+        <h2>County Health Rankings &amp; Roadmaps</h2>
+        <p>
+          County-level health outcomes, health factors, and related measures from the
+          University of Wisconsin Population Health Institute / RWJF. Map counties by
+          year, browse overall ranks and measures, and summarize with SQL.
+          Source:
+          <a href="https://www.countyhealthrankings.org/health-data/methodology-and-sources/data-documentation" target="_blank" rel="noopener">CHR Data &amp; Documentation</a>.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="usa_county_health_rankings.html">Open County Health Rankings</a>
+          <a class="btn ghost" href="https://www.countyhealthrankings.org/health-data/methodology-and-sources/data-documentation" target="_blank" rel="noopener">Documentation</a>
+        </div>
+      </article>
+
+      <article class="card featured">
+        <div class="tag">Built-in explorer · CDC PLACES</div>
+        <h2>Place-based Health Experience</h2>
+        <p>
+          CDC PLACES model-based estimates for chronic disease and health-related measures
+          at state and county scale — Health Outcomes, Prevention, Health Risk Behaviors,
+          Disability, Health Status, Health-Related Needs, and Non-Medical Factors.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="usa_health_experience.html">Open PLACES explorer</a>
+          <a class="btn ghost" href="https://experience.arcgis.com/experience/22c7182a162d45788dd52a2362f8ed65" target="_blank" rel="noopener">Official Experience map</a>
+          <a class="btn ghost" href="https://www.cdc.gov/places" target="_blank" rel="noopener">Documentation</a>
+        </div>
+      </article>
+
+      <article class="card featured">
+        <div class="tag">Built-in explorer · CDC / ATSDR</div>
+        <h2>Social Vulnerability Index (SVI)</h2>
+        <p>
+          CDC/ATSDR’s SVI ranks communities on social factors that affect resilience to
+          disasters and health stressors — socioeconomic status, household composition,
+          minority status/language, and housing/transportation. Explore overall SVI and
+          all indicators for states, counties, and census tracts (2022).
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="usa_svi.html">Open SVI explorer</a>
+          <a class="btn ghost" href="https://www.atsdr.cdc.gov/place-health/php/svi/svi-interactive-map.html" target="_blank" rel="noopener">Official SVI map</a>
+          <a class="btn ghost" href="https://www.atsdr.cdc.gov/place-health/php/svi/index.html" target="_blank" rel="noopener">Documentation</a>
+        </div>
+      </article>
+
+      <article class="card featured">
+        <div class="tag">Built-in explorer · NCI / CDC</div>
+        <h2>USA Cancer Atlas</h2>
+        <p>
+          County-level cancer incidence and mortality for the contiguous U.S. from
+          State Cancer Profiles — modeled annual incidence (2020–2025), observed
+          5-year pooled incidence (2017–2021), and APC-reconstructed mortality
+          (2019–2023). Map by cancer site and year, summarize with SQL, and read
+          full dataset documentation in-page.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="usa_cancer_atlas.html">Open Cancer Atlas</a>
+          <a class="btn ghost" href="https://statecancerprofiles.cancer.gov" target="_blank" rel="noopener">State Cancer Profiles</a>
+          <a class="btn ghost" href="cancer_documentation.html">Documentation</a>
+        </div>
+      </article>
+
+      <article class="card featured">
+        <div class="tag">Built-in explorer · CDC / NCHS</div>
+        <h2>USA Overdose Mortality</h2>
+        <p>
+          County-level drug-overdose and opioid-related mortality for the contiguous U.S.
+          — three live CDC/NCHS source layers: model-based county estimates (2003–2021),
+          VSRR provisional county counts (2020→), and VSRR state opioid totals allocated
+          to counties (2020→). Map by year, compare sources, summarize with SQL, and read
+          full dataset documentation in-page.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="usa_overdose_mortality.html">Open Overdose Mortality</a>
+          <a class="btn ghost" href="https://www.cdc.gov/nchs/data-visualization/drug-poisoning-mortality/" target="_blank" rel="noopener">NCHS visualization</a>
+          <a class="btn ghost" href="overdose_documentation.html">Documentation</a>
+        </div>
+      </article>
+
+      <article class="card featured">
+        <div class="tag">Built-in explorer · NIH / NIMHD</div>
+        <h2>USA Mortality Data</h2>
+        <p>
+          Age-adjusted mortality rates (deaths per 100,000) from NIMHD HDPulse / National
+          Vital Statistics System — major causes of death at state and county scale
+          (2019–2023). Map, filter by cause, and summarize with SQL.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="usa_mortality_data.html">Open mortality explorer</a>
+          <a class="btn ghost" href="https://hdpulse.nimhd.nih.gov/data-portal/mortality/map?age=001&amp;age_options=age_11&amp;cod=256&amp;cod_options=cod_15&amp;comparison=states_to_us&amp;comparison_options=comparison_state&amp;race=00&amp;race_options=race_6&amp;ratetype=aa&amp;ratetype_options=ratetype_2&amp;ruralurban=0&amp;ruralurban_options=ruralurban_3&amp;sex=0&amp;sex_options=sex_3&amp;statefips=99&amp;statefips_options=area_states&amp;yeargroup=5&amp;yeargroup_options=year5yearmort_1&amp;county=01000&amp;county_options=counties_alabama&amp;radio_comparison=areas&amp;radio_comparison_options=cods_or_areas" target="_blank" rel="noopener">Official HDPulse map</a>
+        </div>
+      </article>
+
+      <article class="card featured">
+        <div class="tag">Built-in explorer · U.S. Census Bureau</div>
+        <h2>Census Demography</h2>
+        <p>
+          County and state population estimates time series (2010–2023) from the Census
+          Bureau Population Estimates Program — total population, change, births, deaths,
+          and migration. Map by year, compare indicators, and view multi-year trends.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="usa_census_demograpy.html">Open Census Demography</a>
+          <a class="btn ghost" href="https://www.census.gov/programs-surveys/popest.html" target="_blank" rel="noopener">Census PEP</a>
+        </div>
+      </article>
+
+      <article class="card featured">
+        <div class="tag">Built-in explorer · RCMS / ARDA</div>
+        <h2>Religion Census</h2>
+        <p>
+          County and state religious congregations, adherents, and adherence rates from
+          RCMS 2010 (242 groups, tradition families) and the 2020 U.S. Religion Census
+          (375 groups). Map by year, group, and metric; summarize with SQL; read full
+          documentation in-page.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="usa_religion_census.html">Open Religion Census</a>
+          <a class="btn ghost" href="https://www.thearda.com/data-archive?fid=RCMSCY10" target="_blank" rel="noopener">ARDA RCMS 2010</a>
+          <a class="btn ghost" href="religion_census_documentation.html">Documentation</a>
+        </div>
+      </article>
+
+      <article class="card featured">
+        <div class="tag">Built-in explorer · MEDSL / tonmcg</div>
+        <h2>Presidential Election Data</h2>
+        <p>
+          County and state Democratic and Republican presidential vote counts and percentages
+          for 2004, 2008, 2012, 2016, 2020, and 2024. Map margin and vote share by election
+          year, explore trends, and summarize with SQL.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="usa_presidential_election_data.html">Open Presidential Elections</a>
+          <a class="btn ghost" href="https://electionlab.mit.edu/" target="_blank" rel="noopener">MIT Election Lab</a>
+          <a class="btn ghost" href="presidential_election_documentation.html">Documentation</a>
+        </div>
+      </article>
+
+      <article class="card featured">
+        <div class="tag">Built-in workbench · AlaSQL</div>
+        <h2>EDA &amp; Model Development</h2>
+        <p>
+          Load a cross-layer data pipeline, explore with maps and descriptive statistics, then
+          prototype simple linear models across CHR, SVI, Health Experience, mortality,
+          overdose mortality, Census Demography, cancer (via the Cancer Atlas explorer),
+          Superfund, air quality, and soil.
+        </p>
+        <div class="actions">
+          <a class="btn primary" href="eda_model_development.html">Open EDA &amp; Models</a>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    USA-Health Data Atlas · <a href="https://github.com/zia207">Zia Ahmed</a> ·
+    <a href="mailto:zia207@gmail.com">zia207@gmail.com</a>.
+    Sources linked above remain authoritative for each dataset. County Health Rankings
+    data in this atlas are processed from CHR national and analytic releases for local
+    exploration; always verify figures against the official CHR documentation before
+    formal reporting.
+  </footer>
+</body>
+</html>

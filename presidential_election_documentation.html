@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Presidential Election Data Documentation · USA-Health Data Atlas</title>
+<style>
+:root {
+  --ink: #0b1f2a; --panel: #ffffff; --rail: #0e3a4f; --accent: #1d7a8c;
+  --paper: #e8eef1; --hair: #c5d0d6; --steel: #5a6e78; --lake: #14707e;
+  --focus: #0e4f8b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--paper); color: var(--ink); line-height: 1.55;
+}
+a { color: var(--lake); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.banner {
+  background: linear-gradient(90deg, #071821 0%, #0e3a4f 55%, #14586f 100%);
+  color: #e8f2f5; border-bottom: 4px solid var(--accent);
+}
+.banner-inner { max-width: 1180px; margin: 0 auto; padding: 18px 20px 20px; }
+.banner-top { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.banner-copy { min-width: 0; flex: 1; }
+.banner-aside { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.banner-logo {
+  display: block; width: clamp(72px, 12vw, 110px); height: auto;
+  background: #fff; border-radius: 10px; padding: 5px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.18);
+}
+.explorer-nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 520px; }
+.explorer-nav a {
+  display: inline-block; background: rgba(255,255,255,.08); color: #e8f2f5;
+  text-decoration: none; border: 1px solid rgba(255,255,255,.22);
+  padding: 6px 10px; font-size: 12px; white-space: nowrap;
+}
+.explorer-nav a:hover { background: rgba(255,255,255,.14); }
+.explorer-nav a.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.eyebrow {
+  font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+  letter-spacing: .14em; text-transform: uppercase; color: #8fb6bd;
+}
+h1.page-title { margin: 8px 0 6px; font-size: clamp(26px, 3.5vw, 38px); line-height: 1.08; font-weight: 750; }
+h1.page-title span { color: #7fcad4; }
+.sub { color: #b9c9ce; font-size: 14px; max-width: 820px; }
+.layout {
+  max-width: 1180px; margin: 0 auto; padding: 14px 16px 48px;
+  display: grid; grid-template-columns: 240px 1fr; gap: 18px;
+}
+@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+.toc {
+  position: sticky; top: 12px; align-self: start;
+  background: var(--panel); border: 1px solid var(--hair); padding: 14px;
+}
+@media (max-width: 900px) { .toc { position: static; } }
+.toc h2 {
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--steel); margin: 0 0 10px; font-family: ui-monospace, Consolas, monospace;
+}
+.toc ul { list-style: none; }
+.toc li { margin-bottom: 6px; }
+.toc a { text-decoration: none; font-size: 13px; color: var(--rail); font-weight: 600; }
+.toc a:hover { color: var(--accent); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.btn {
+  display: inline-block; background: var(--rail); color: #fff; text-decoration: none;
+  padding: 8px 12px; font-size: 13px; font-weight: 650;
+}
+.btn:hover { background: var(--accent); }
+.btn.ghost { background: transparent; color: var(--rail); border: 1px solid var(--hair); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.content { min-width: 0; }
+.doc-section {
+  background: var(--panel); border: 1px solid var(--hair); padding: 20px 22px 28px;
+  margin-bottom: 16px;
+}
+.doc-section h1 { font-size: 1.45rem; margin: 0 0 .6em; line-height: 1.2; }
+.doc-section h2 {
+  font-size: 1.15rem; margin: 1.4em 0 .45em; padding-bottom: 4px;
+  border-bottom: 1px solid var(--hair); line-height: 1.25;
+}
+.doc-section h3 { font-size: 1rem; margin: 1.1em 0 .35em; }
+.doc-section p, .doc-section ul, .doc-section ol { margin: .55em 0; }
+.doc-section li { margin: .2em 0 .2em 1.2em; }
+.doc-section table {
+  width: 100%; border-collapse: collapse; font-size: 13px; margin: .8em 0;
+}
+.doc-section th, .doc-section td {
+  border: 1px solid var(--hair); padding: 7px 9px; text-align: left; vertical-align: top;
+}
+.doc-section th { background: #0e3a4f; color: #fff; font-weight: 600; }
+.doc-section tr:nth-child(even) td { background: #f4f8f8; }
+.doc-section code {
+  font-family: ui-monospace, Consolas, monospace; font-size: .9em;
+  background: #eef5f7; padding: 1px 4px;
+}
+.doc-section pre {
+  background: #14262e; color: #b9e0e6; padding: 12px 14px; overflow: auto;
+  font-size: 12px; line-height: 1.45; margin: .8em 0;
+}
+.doc-section pre code { background: transparent; padding: 0; color: inherit; }
+.doc-section hr { border: none; border-top: 1px solid var(--hair); margin: 1.5em 0; }
+.doc-section em { color: #33474f; }
+.footer {
+  max-width: 1180px; margin: 0 auto; padding: 0 16px 36px;
+  font-size: 12px; color: var(--steel);
+}
+</style>
+</head>
+<body>
+  <header class="banner">
+    <div class="banner-inner">
+      <div class="banner-top">
+        <div class="banner-copy">
+          <div class="eyebrow">USA-Health Data Atlas · MEDSL / tonmcg</div>
+          <h1 class="page-title">Presidential Election <span>Documentation</span></h1>
+          <p class="sub">
+            Dataset documentation for county-level U.S. presidential election returns,
+            2004–2024 — vote counts, percentages, and Democratic margin.
+          </p>
+        </div>
+        <div class="banner-aside">
+          <img class="banner-logo" src="upatta_logo.png" alt="Upatta Data Analytics" width="110" height="110"/>
+          <nav class="explorer-nav" aria-label="Atlas navigation">
+            <a href="index.html">Home</a>
+            <a href="usa_presidential_election_data.html">Presidential Elections</a>
+            <a class="active" href="presidential_election_documentation.html" aria-current="page">Documentation</a>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="toc" aria-label="Table of contents">
+      <h2>On this page</h2>
+      <ul>
+        <li><a href="#dataset-documentation">Dataset Documentation</a></li>
+        <li><a href="#what-this-dataset-is">What this dataset is</a></li>
+        <li><a href="#validation">Validation</a></li>
+        <li><a href="#schema-long-file">Schema — long file</a></li>
+        <li><a href="#schema-wide-file">Schema — wide file</a></li>
+        <li><a href="#coverage-notes-and-caveats">Coverage notes and caveats</a></li>
+        <li><a href="#usage">Usage</a></li>
+        <li><a href="#file-manifest">File manifest</a></li>
+        <li><a href="#references">References</a></li>
+      </ul>
+      <div class="actions">
+        <a class="btn" href="usa_presidential_election_data.html">Open Election Explorer</a>
+        <a class="btn ghost" href="https://electionlab.mit.edu/" target="_blank" rel="noopener">MIT Election Lab</a>
+        <a class="btn ghost" href="https://github.com/tonmcg/US_County_Level_Election_Results_08-24" target="_blank" rel="noopener">tonmcg 2024 feed</a>
+      </div>
+    </aside>
+    <main class="content">
+      <article class="doc-section" id="presidential-election"><h1>U.S. County-Level Presidential Election Results (2004–2024)</h1>
+<h2 id="dataset-documentation">Dataset Documentation</h2>
+<p>County-level Democratic and Republican vote counts and percentages for the six
+presidential elections of <strong>2004, 2008, 2012, 2016, 2020, and 2024</strong>, for every
+U.S. county / county-equivalent. Produced by <code>build_county_presidential_2004_2024.py</code>.
+The <strong>USA Presidential Election Data</strong> explorer (<code>usa_presidential_election_data.html</code>)
+maps counties and states by election year and metric, with SQL summarization and
+trend charts.</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Geographic unit</td>
+<td>U.S. county / county-equivalent (FIPS)</td>
+</tr>
+<tr>
+<td>Elections</td>
+<td>2004, 2008, 2012, 2016, 2020, 2024</td>
+</tr>
+<tr>
+<td>Counties</td>
+<td>~3,154 per year (2004–2020), 3,160 (2024); 3,172 unique across years</td>
+</tr>
+<tr>
+<td>Primary metric</td>
+<td><code>dem_pct</code>, <code>rep_pct</code> — share of total county votes</td>
+</tr>
+<tr>
+<td>Files</td>
+<td>long + wide CSV (parquet when rebuilt)</td>
+</tr>
+<tr>
+<td>Rows</td>
+<td>long: 18,929 · wide: 3,172</td>
+</tr>
+<tr>
+<td>Atlas build script</td>
+<td><code>scripts/build_presidential_election_data.py</code></td>
+</tr>
+<tr>
+<td>Source builder</td>
+<td><code>data/presidential_election_data/build_county_presidential_2004_2024.py</code></td>
+</tr>
+</tbody>
+</table>
+<p>Rebuild atlas assets:</p>
+<pre><code class="language-bash">python3 scripts/build_presidential_election_data.py
+python3 scripts/build_presidential_election_documentation.py
+</code></pre>
+<p>Percentages are of <strong>total county votes</strong> (all candidates), so
+<code>dem_pct + rep_pct + other ≈ 100</code>.</p>
+<hr />
+<h2 id="what-this-dataset-is">What this dataset is</h2>
+<p>Real, published county returns — no modeling or synthesis. Two authoritative
+sources are combined, split at the last year the official academic file covers:</p>
+<ul>
+<li><strong>2004–2020 — MIT Election Data &amp; Science Lab (MEDSL).</strong> The official <em>County
+  Presidential Election Returns 2000–2020</em> file (long format, per candidate/
+  party, with FIPS). For 2020, returns are reported by vote <em>mode</em> (election-day,
+  absentee, early, etc.); this build prefers the <code>TOTAL</code> mode where present and
+  otherwise sums the mode rows, so each county has one figure per party.</li>
+<li><strong>2024 — tonmcg/US_County_Level_Election_Results_08-24.</strong> Compiled from AP /
+  network feeds (Fox News, Politico, NYT). The MEDSL reachable file stops at
+  2020, and MEDSL&rsquo;s certified 2024 county file was not yet available from the
+  mirror used; when it is, the builder can swap 2024 to MEDSL. This source is
+  described by its author as extensive but not the authoritative certified record.</li>
+</ul>
+<p>The <code>source</code> column records which provider each row came from (<code>MEDSL</code> or
+<code>tonmcg</code>).</p>
+<hr />
+<h2 id="validation">Validation</h2>
+<p>County-summed national vote share reproduces the official national popular vote
+almost exactly, which is the main evidence the returns and processing are correct:</p>
+<table>
+<thead>
+<tr>
+<th>Year</th>
+<th>Dem % (dataset / actual)</th>
+<th>Rep % (dataset / actual)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2004</td>
+<td>48.2 / 48.3</td>
+<td>50.6 / 50.7</td>
+</tr>
+<tr>
+<td>2008</td>
+<td>52.9 / 52.9</td>
+<td>45.7 / 45.7</td>
+</tr>
+<tr>
+<td>2012</td>
+<td>51.0 / 51.1</td>
+<td>47.0 / 47.2</td>
+</tr>
+<tr>
+<td>2016</td>
+<td>48.2 / 48.2</td>
+<td>46.1 / 46.1</td>
+</tr>
+<tr>
+<td>2020</td>
+<td>51.2 / 51.3</td>
+<td>46.9 / 46.8</td>
+</tr>
+<tr>
+<td>2024</td>
+<td>48.4 / 48.3</td>
+<td>49.9 / 49.8</td>
+</tr>
+</tbody>
+</table>
+<p>County-level spot checks also behave as expected — e.g., Harris County, TX
+shifting from 44.6 D / 54.8 R (2004) to 54.0 D / 41.6 R (2016); Manhattan
+(New York County) 79–87% Democratic throughout.</p>
+<hr />
+<h2 id="schema-long-file">Schema — long file</h2>
+<p>One row per county × election year.</p>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>year</code></td>
+<td>int</td>
+<td>Election year</td>
+</tr>
+<tr>
+<td><code>fips</code></td>
+<td>string(5)</td>
+<td>County FIPS, zero-padded</td>
+</tr>
+<tr>
+<td><code>county</code></td>
+<td>string</td>
+<td>County name</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>string</td>
+<td>State (postal abbr. for 2004–2020; full name for 2024)</td>
+</tr>
+<tr>
+<td><code>dem_votes</code></td>
+<td>int</td>
+<td>Democratic candidate votes</td>
+</tr>
+<tr>
+<td><code>rep_votes</code></td>
+<td>int</td>
+<td>Republican candidate votes</td>
+</tr>
+<tr>
+<td><code>other_votes</code></td>
+<td>int</td>
+<td>All other votes (<code>total − dem − rep</code>)</td>
+</tr>
+<tr>
+<td><code>total_votes</code></td>
+<td>int</td>
+<td>Total votes cast for president in the county</td>
+</tr>
+<tr>
+<td><code>dem_pct</code></td>
+<td>float</td>
+<td><code>dem_votes / total_votes × 100</code></td>
+</tr>
+<tr>
+<td><code>rep_pct</code></td>
+<td>float</td>
+<td><code>rep_votes / total_votes × 100</code></td>
+</tr>
+<tr>
+<td><code>margin_pct</code></td>
+<td>float</td>
+<td><code>dem_pct − rep_pct</code> (positive = Democratic margin)</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>string</td>
+<td><code>MEDSL</code> (2004–2020) or <code>tonmcg</code> (2024)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="schema-wide-file">Schema — wide file</h2>
+<p>One row per county; percentages spread across years — the direct &ldquo;Dem &amp; Rep %
+per county over time&rdquo; view.</p>
+<p><code>fips, county, state</code>, then for each year <code>Y</code> in {2004, 2008, 2012, 2016, 2020,
+2024}: <code>dem_pct_Y</code>, <code>rep_pct_Y</code>. A missing pair means that county has no return
+for that year (see coverage notes).</p>
+<hr />
+<h2 id="coverage-notes-and-caveats">Coverage notes and caveats</h2>
+<ul>
+<li><strong>Connecticut (2024).</strong> Connecticut replaced counties with planning regions in
+  2022; the 2024 returns use the new planning-region FIPS (<code>091xx</code>), which do not
+  match CT&rsquo;s 2004–2020 county FIPS (<code>090xx</code>). CT rows therefore do not line up
+  across the 2020→2024 boundary — in the wide file, one side of that split is
+  blank for CT.</li>
+<li><strong>Alaska.</strong> Alaska does not report presidential results by borough/county in
+  these sources (it uses house districts / statewide reporting), so Alaska &ldquo;county&rdquo;
+  rows are atypical and FIPS may not be standard borough codes.</li>
+<li><strong>Percentages are of total votes</strong>, not of the two-party vote. For a two-party
+  share, compute <code>dem_votes / (dem_votes + rep_votes)</code>.</li>
+<li><strong>2024 provenance.</strong> 2024 comes from a compiled, non-certified source; treat it
+  as provisional relative to the MEDSL 2004–2020 records, and expect minor
+  revisions when certified data is substituted.</li>
+<li><strong>County counts change over time</strong> (merges, independent cities, CT), so the set
+  of FIPS is not identical across all six years; ~3,172 unique FIPS appear in at
+  least one year.</li>
+</ul>
+<hr />
+<h2 id="usage">Usage</h2>
+<pre><code class="language-python">import pandas as pd
+
+long = pd.read_parquet(&quot;us_county_presidential_2004_2024_long.parquet&quot;)
+wide = pd.read_parquet(&quot;us_county_presidential_2004_2024_wide.parquet&quot;)
+
+# 1. One county's Democratic trajectory
+harris = long[long.fips == &quot;48201&quot;][[&quot;year&quot;, &quot;dem_pct&quot;, &quot;rep_pct&quot;, &quot;margin_pct&quot;]]
+
+# 2. Two-party Democratic share for a year
+d = long[long.year == 2024].copy()
+d[&quot;dem_two_party&quot;] = d.dem_votes / (d.dem_votes + d.rep_votes) * 100
+
+# 3. Counties that flipped R-&gt;D between 2004 and 2020 (by margin sign)
+piv = long.pivot_table(index=&quot;fips&quot;, columns=&quot;year&quot;, values=&quot;margin_pct&quot;)
+flipped = piv[(piv[2004] &lt; 0) &amp; (piv[2020] &gt; 0)]
+
+# 4. Change in Democratic share, 2012 -&gt; 2024, straight from the wide file
+wide[&quot;dem_shift_12_24&quot;] = wide.dem_pct_2024 - wide.dem_pct_2012
+</code></pre>
+<p>To rebuild (both sources are on GitHub):</p>
+<pre><code class="language-python">from build_county_presidential_2004_2024 import build
+long, wide = build()
+</code></pre>
+<hr />
+<h2 id="file-manifest">File manifest</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>us_county_presidential_2004_2024_wide.parquet</code></td>
+<td>Wide panel (recommended)</td>
+</tr>
+<tr>
+<td><code>us_county_presidential_2004_2024_wide.csv</code></td>
+<td>Wide panel, CSV</td>
+</tr>
+<tr>
+<td><code>us_county_presidential_2004_2024_long.parquet</code></td>
+<td>Tidy long panel</td>
+</tr>
+<tr>
+<td><code>us_county_presidential_2004_2024_long.csv</code></td>
+<td>Tidy long panel, CSV</td>
+</tr>
+<tr>
+<td><code>build_county_presidential_2004_2024.py</code></td>
+<td>Builder (MEDSL + tonmcg)</td>
+</tr>
+<tr>
+<td><code>US_County_Presidential_Election_Data.md</code></td>
+<td>This document</td>
+</tr>
+<tr>
+<td><code>usa_presidential_election_data.html</code></td>
+<td>Atlas explorer (map + SQL + trends)</td>
+</tr>
+<tr>
+<td><code>presidential_election_documentation.html</code></td>
+<td>Generated documentation page</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="references">References</h2>
+<ul>
+<li>MIT Election Data &amp; Science Lab. <em>County Presidential Election Returns
+  2000–2020.</em> Harvard Dataverse, doi:10.7910/DVN/VOQCHQ.
+  https://electionlab.mit.edu · https://github.com/MEDSL</li>
+<li>T. McGovern. <em>US County Level Election Results 08–24.</em>
+  https://github.com/tonmcg/US_County_Level_Election_Results_08-24
+  (2024 data compiled from AP / network feeds.)</li>
+</ul>
+<p><em>The 2004–2020 returns are the official MEDSL academic dataset; 2024 is a
+compiled, non-certified source. Percentages are of total county votes.</em></p></article>
+    </main>
+  </div>
+
+  <footer class="footer">
+  Generated from <code>data/presidential_election_data/US_County_Presidential_Election_Data.md</code>.
+  County returns from MEDSL (2004–2020) and tonmcg (2024).
+  </footer>
+</body>
+</html>
