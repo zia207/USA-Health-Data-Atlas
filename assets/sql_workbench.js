@@ -824,6 +824,7 @@
 
   /** NAD83 / Conus Albers (EPSG:5070) — x/y in meters. */
   function projectAlbers5070(latDeg, lonDeg) {
+    const R = 6378137.0; // GRS 80 semi-major axis (EPSG:5070)
     const phi = latDeg * Math.PI / 180;
     const lambda = lonDeg * Math.PI / 180;
     const lambda0 = -96 * Math.PI / 180;
@@ -836,8 +837,8 @@
     const theta = n * (lambda - lambda0);
     const rho = Math.sqrt(c - 2 * n * Math.sin(phi)) / n;
     return {
-      x: rho * Math.sin(theta),
-      y: rho0 - rho * Math.cos(theta),
+      x: R * rho * Math.sin(theta),
+      y: R * (rho0 - rho * Math.cos(theta)),
     };
   }
 
